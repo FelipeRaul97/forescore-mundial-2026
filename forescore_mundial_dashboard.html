@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forescore Mundial 2026 — v3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1814; --paper: #f4ede2; --paper-dark: #e8dcc4;
+    --rule: #2a251e; --accent: #c8331e; --accent-dark: #8a2014;
+    --gold: #b08a3e; --muted: #6e655a; --green: #4a6b3e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter Tight', sans-serif; line-height: 1.5;
+    background-image: radial-gradient(circle at 15% 25%, rgba(200,51,30,0.025) 0%, transparent 50%), radial-gradient(circle at 85% 75%, rgba(176,138,62,0.03) 0%, transparent 60%);
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.35; pointer-events: none; z-index: 1; mix-blend-mode: multiply;
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 2; }
+  
+  header.masthead { border-bottom: 2px solid var(--ink); padding: 32px 0 24px; margin-bottom: 32px; }
+  .mast-top { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted); padding-bottom: 16px; border-bottom: 1px solid var(--rule); }
+  .mast-title { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(48px, 9vw, 120px); line-height: 0.88; letter-spacing: -0.04em; margin: 20px 0 8px; }
+  .mast-title em { font-style: italic; color: var(--accent); font-weight: 400; }
+  .mast-version { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--accent); color: var(--paper); padding: 4px 10px; letter-spacing: 0.1em; margin-left: 12px; vertical-align: middle; }
+  .mast-subtitle { font-family: 'Fraunces', serif; font-size: 24px; font-style: italic; color: var(--muted); margin-bottom: 8px; max-width: 880px; }
+  .mast-byline { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent-dark); margin-top: 12px; }
+  
+  nav.tabs { display: flex; border-bottom: 2px solid var(--ink); margin-bottom: 40px; overflow-x: auto; }
+  .tab { padding: 14px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; background: transparent; border: none; border-right: 1px solid var(--rule); cursor: pointer; color: var(--muted); white-space: nowrap; }
+  .tab:hover { color: var(--ink); background: var(--paper-dark); }
+  .tab.active { color: var(--paper); background: var(--ink); font-weight: 700; }
+  
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--accent); margin-bottom: 8px; padding-left: 12px; border-left: 3px solid var(--accent); }
+  h2.section-title { font-family: 'Fraunces', serif; font-weight: 700; font-size: 48px; line-height: 1; letter-spacing: -0.02em; margin-bottom: 24px; }
+  
+  .section { display: none; }
+  .section.active { display: block; }
+  
+  .leader-grid { display: grid; grid-template-columns: 1fr 380px; gap: 48px; }
+  .leader-row { display: grid; grid-template-columns: 56px 1fr 280px; gap: 16px; align-items: center; padding: 22px 0; border-bottom: 1px solid rgba(42,37,30,0.15); }
+  .leader-row.top1 { border-bottom: 2px solid var(--accent); }
+  .rank { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 900; line-height: 1; }
+  .rank.top { color: var(--accent); }
+  .team-name { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; }
+  .team-group { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-top: 4px; }
+  
+  .ci-strip { position: relative; width: 100%; height: 26px; background: var(--paper-dark); }
+  .ci-strip .ci-range { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: 0.3; }
+  .ci-strip .ci-mean { position: absolute; top: -3px; bottom: -3px; width: 3px; background: var(--ink); }
+  .ci-strip .ci-label { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; z-index: 2; }
+  
+  .winner-panel { background: var(--ink); color: var(--paper); padding: 36px 32px; position: sticky; top: 24px; height: fit-content; }
+  .winner-panel .kicker-inv { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--gold); margin-bottom: 12px; }
+  .winner-name { font-family: 'Fraunces', serif; font-style: italic; font-size: 56px; line-height: 0.95; margin-bottom: 18px; }
+  .winner-prob { font-family: 'JetBrains Mono', monospace; font-size: 72px; font-weight: 700; line-height: 1; color: var(--accent); letter-spacing: -0.04em; }
+  .winner-prob span { font-size: 32px; vertical-align: top; }
+  .winner-ci { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gold); margin-top: 8px; }
+  .winner-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--paper-dark); margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(244,237,226,0.2); }
+  
+  /* v3 callout */
+  .v3-callout { background: var(--ink); color: var(--paper); padding: 32px 36px; margin: 32px 0; border-left: 6px solid var(--accent); }
+  .v3-callout h3 { font-family: 'Fraunces', serif; font-style: italic; font-size: 28px; margin-bottom: 16px; color: var(--gold); }
+  .v3-callout p { font-family: 'Fraunces', serif; font-size: 16px; line-height: 1.5; max-width: 800px; }
+  .v3-callout .stat { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 700; }
+  
+  /* Improvements grid */
+  .improv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 32px; }
+  .improv-card { border: 1px solid var(--rule); padding: 24px; background: rgba(255,255,255,0.4); }
+  .improv-card h4 { font-family: 'Fraunces', serif; font-size: 20px; margin-bottom: 8px; }
+  .improv-card .impact { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .improv-card p { font-family: 'Fraunces', serif; font-size: 14px; line-height: 1.5; color: var(--ink); }
+  
+  /* Groups */
+  .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 24px; }
+  .group-card { border: 1px solid var(--rule); padding: 24px; background: rgba(255,255,255,0.4); }
+  .group-letter { font-family: 'Fraunces', serif; font-weight: 900; font-size: 64px; line-height: 1; letter-spacing: -0.04em; }
+  .group-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin: 4px 0 20px; }
+  .group-team { padding: 12px 0; border-top: 1px solid rgba(42,37,30,0.1); }
+  .group-team:first-of-type { border-top: 1px solid var(--ink); }
+  .group-team-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; display: flex; justify-content: space-between; align-items: baseline; }
+  .group-team-name .prob { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  
+  /* Matches */
+  .matches-controls { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+  .matches-controls label { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+  .matches-controls select { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 8px 12px; background: var(--paper); border: 1px solid var(--ink); }
+  .match-card { border: 1px solid rgba(42,37,30,0.2); padding: 20px 24px; margin-bottom: 16px; display: grid; grid-template-columns: 80px 1fr 380px; gap: 20px; align-items: center; }
+  .match-card:hover { background: rgba(200,51,30,0.03); }
+  .match-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .match-teams { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; }
+  .match-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .match-scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .score-cell { text-align: center; padding: 8px 4px; background: rgba(200,51,30,0.05); border: 1px solid rgba(42,37,30,0.1); }
+  .score-cell .score { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; line-height: 1; }
+  .score-cell .score-prob { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .score-cell.top { background: var(--accent); color: var(--paper); }
+  .score-cell.top .score-prob { color: var(--paper-dark); }
+  
+  /* Pipeline code */
+  .code-block { background: var(--ink); color: var(--paper); padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; margin: 16px 0; }
+  .code-block .cmd { color: var(--gold); }
+  .code-block .arg { color: #88c0d0; }
+  .code-block .comment { color: var(--muted); }
+  
+  footer { margin-top: 80px; padding: 32px 0; border-top: 2px solid var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); display: flex; justify-content: space-between; }
+  
+  @media (max-width: 900px) { .leader-grid { grid-template-columns: 1fr; } .winner-panel { position: static; } .mast-title { font-size: 48px; } .match-card { grid-template-columns: 1fr; } }
+
+  .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 24px; }
+  .group-card { border: 1px solid var(--rule); padding: 24px; background: rgba(255,255,255,0.4); }
+  .group-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .group-letter { font-family: 'Fraunces', serif; font-weight: 900; font-size: 56px; line-height: 1; letter-spacing: -0.04em; }
+  .group-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); text-align: right; }
+  .group-table { width: 100%; border-collapse: collapse; }
+  .group-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 6px 4px; border-bottom: 2px solid var(--ink); text-align: right; }
+  .group-table thead th:first-child { text-align: left; }
+  .group-table tbody td { padding: 10px 4px; border-bottom: 1px solid rgba(42,37,30,0.1); font-variant-numeric: tabular-nums; }
+  .group-table tbody tr:last-child td { border-bottom: none; }
+  .group-table .gt-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; }
+  .group-table .gt-pts { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; text-align: right; }
+  .group-table .gt-pts.top { color: var(--accent); }
+  .group-table .gt-stat { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-align: right; }
+  .group-table .gt-prob { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; font-weight: 500; }
+  .group-table .gt-prob.high { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="masthead">
+  <div class="mast-top">
+    <span>Vol. 3 · Nº 1 · 5 Junio 2026</span>
+    <span>Felipe Tupac Yupanqui · Forescore Engine v3.0</span>
+    <span>50.000 sims · Penales + Empate calibrados</span>
+  </div>
+  <h1 class="mast-title">Forescore <em>Mundial</em><span class="mast-version">v3.0</span></h1>
+  <p class="mast-subtitle">Modelo estadístico completo para el Mundial 2026. Penales por equipo, tendencia al empate calibrada y threshold óptimo de predicción 1X2.</p>
+  <div class="mast-byline">Hit rate proyectado: 67.5% (clasis) · Techo realista del problema: ~72%</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" onclick="showSection('overview', this)">Top Candidatos</button>
+  <button class="tab" onclick="showSection('changes', this)">Cómo funciona</button>
+  <button class="tab" onclick="showSection('groups', this)">Grupos</button>
+  <button class="tab" onclick="showSection('matches', this)">Marcadores</button>
+  <button class="tab" onclick="showSection('bracket', this)">Camino al título</button>
+</nav>
+
+<section id="overview" class="section active">
+  <div class="kicker">v3.0 final · Predicción pre-Mundial</div>
+  <h2 class="section-title">Argentina al frente, con sombra de incertidumbre</h2>
+  <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
+    Modelo final con penales calibrados por equipo, tendencia al empate por selección y threshold óptimo de predicción 1X2. Los intervalos 95% reflejan la incertidumbre real del fútbol eliminatorio.
+  </p>
+  <div class="leader-grid">
+    <div class="leader-list" id="leaderList"></div>
+    <aside class="winner-panel" id="winnerPanel"></aside>
+  </div>
+</section>
+
+<section id="changes" class="section">
+  <div class="kicker">Metodología · Forescore Engine v3.0</div>
+  <h2 class="section-title">Cómo se construyó este modelo</h2>
+
+  <div class="v3-callout">
+    <h3>Un modelo estadístico de fútbol, de punta a punta</h3>
+    <p>
+      Forescore v3.0 combina un modelo de goles basado en Dixon-Coles con simulaciones Monte Carlo masivas y tres capas de calibración empírica: probabilidades históricas de penales, tendencia al empate por selección y un threshold óptimo de predicción. Todo ajustado y validado contra torneos reales.
+    </p>
+  </div>
+
+  <div class="improv-grid">
+
+    <div class="improv-card">
+      <div class="impact">Fundamento · Dixon-Coles</div>
+      <h4>Modelo base de goles por partido</h4>
+      <p>Cada equipo tiene dos parámetros: fuerza atacante (α) y solidez defensiva (β). Los goles de cada equipo en un partido se modelan como distribuciones de Poisson ajustadas con la corrección de Dixon-Coles (1997), que corrige la frecuencia de resultados cerrados como 0-0, 1-0 y 0-1. Hay un parámetro ρ global de correlación entre ambas distribuciones.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Datos · +5.000 partidos internacionales</div>
+      <h4>Entrenamiento sobre resultados históricos</h4>
+      <p>Los parámetros α y β de los 48 equipos se estimaron por máxima verosimilitud sobre resultados internacionales de los últimos años, con decaimiento temporal exponencial: los partidos más recientes pesan más. Se incluyen clasificatorias, amistosos y competiciones de confederación con pesos distintos según el tipo de encuentro.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Calibración #1 · Penales por equipo</div>
+      <h4>Probabilidades históricas de tandas</h4>
+      <p>En lugar del coin flip 50/50, el modelo usa probabilidades empíricas de ganar en penales para cada selección, calculadas sobre tandas de Mundiales, Euros, Copa América, Copa África, Gold Cup y Asian Cup desde 1976. Se aplica suavizado Bayesiano para compensar muestras pequeñas. Alemania 79%, Argentina y Croacia 75%, Portugal 67%. España e Inglaterra, solo 36%.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Calibración #2 · Tendencia al empate</div>
+      <h4>Ajuste empírico por estilo de selección</h4>
+      <p>Algunos equipos empatan más de lo que Poisson predice, independientemente de su nivel. Este patrón se calibró sobre más de 2.500 partidos y se incorpora como corrección sobre P(empate) de cada partido. Suiza +21%, Sudáfrica +20%, Uruguay +10%. Argentina −13%, Finlandia −16%. El ajuste usa shrinkage para equipos con pocas observaciones.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Calibración #3 · Threshold 1X2 óptimo</div>
+      <h4>Regla de predicción calibrada por grid search</h4>
+      <p>La regla clásica "predice lo más probable" nunca predice empate porque casi siempre es la opción menos probable. Mediante grid search se encontró el threshold óptimo: predecir empate si P(empate) ≥ 0.38 y la diferencia entre las probabilidades de victoria es ≤ 0.26. Mejora el hit rate de empates del 0% al 22% y el global en +0.8 puntos.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Simulaciones · 50.000 Monte Carlo</div>
+      <h4>Brackets completos, ronda a ronda</h4>
+      <p>Con las probabilidades por partido se simula el torneo completo 50.000 veces: fase de grupos con criterios de desempate FIFA, octavos, cuartos, semis y final. En cada eliminatoria con empate se resuelven penales usando las probabilidades históricas calibradas. El resultado es una distribución completa con intervalos de confianza al 95%.</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Validación · Qatar 2022</div>
+      <h4>Contrastado contra un torneo real</h4>
+      <p>El modelo se validó retroactivamente contra Qatar 2022. Con penales calibrados, P(Argentina campeón) sube de 24.7% a 27.2%, y el log-loss del torneo baja de 1.40 a 1.30. El hit rate proyectado en fases eliminatorias competitivas es 67.5%, frente a un techo realista del problema de ~72% (la incertidumbre inherente del fútbol).</p>
+    </div>
+
+    <div class="improv-card">
+      <div class="impact">Stack técnico · Python + SciPy + NumPy</div>
+      <h4>Pipeline completo en Python</h4>
+      <p>El modelo Dixon-Coles se optimiza con scipy.optimize. Las simulaciones Monte Carlo usan NumPy vectorizado para correr 50.000 torneos completos en minutos. Los parámetros de penales y tendencia al empate se guardan como CSV y se cargan en el motor de simulación. El dashboard es HTML/JS estático generado a partir de esos outputs.</p>
+    </div>
+
+  </div>
+</section>
+
+<section id="groups" class="section">
+  <div class="kicker">Fase de grupos</div>
+  <h2 class="section-title">Doce grupos</h2>
+  <div class="group-grid" id="groupGrid"></div>
+</section>
+
+<section id="matches" class="section">
+  <div class="kicker">Predicciones partido a partido</div>
+  <h2 class="section-title">Distribución de marcadores</h2>
+  <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
+    Los 5 marcadores más probables por partido. Ninguno supera típicamente el 20%: el fútbol es ruidoso.
+  </p>
+  <div class="matches-controls">
+    <label for="filterGroup">Filtrar grupo:</label>
+    <select id="filterGroup" onchange="renderMatches()"><option value="">Todos los grupos</option></select>
+    <label for="filterTeam">Filtrar equipo:</label>
+    <select id="filterTeam" onchange="renderMatches()"><option value="">Todos</option></select>
+  </div>
+  <div id="matchesContainer"></div>
+</section>
+
+<section id="bracket" class="section">
+  <div class="kicker">Camino al título</div>
+  <h2 class="section-title">Probabilidades por ronda</h2>
+  <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
+    Lee cada fila como un embudo: empieza ancha en "pasa de grupo" y se estrecha en cada eliminatoria.
+  </p>
+  <div id="bracketChart" style="overflow-x: auto;"></div>
+</section>
+
+
+<footer>
+  <span>Forescore Mundial 2026 · v3.0</span>
+  <span>50.000 sims · Dixon-Coles + penales + threshold empate</span>
+  <span>Felipe Tupac Yupanqui · Jun 2026</span>
+</footer>
+</div>
+
+<script>
+const teams = [{"team": "Argentina", "group": "J", "p_1st": 0.7459666666666667, "p_2nd": 0.1901666666666666, "p_3rd": 0.0566333333333333, "p_advance": 0.9865, "p_r16": 0.7078, "p_qf": 0.5648333333333333, "p_sf": 0.4395666666666666, "p_final": 0.3128666666666667, "p_champ": 0.2244666666666666, "team_es": "Argentina", "p_champ_mean": 0.1870666666666666, "p_champ_lo": 0.100914005702067, "p_champ_hi": 0.4698920883820384, "avg_points": 7.020166666666666, "avg_gd": 4.412233333333333, "avg_gf": 5.681566666666667, "avg_ga": 1.2693333333333334}, {"team": "Spain", "group": "H", "p_1st": 0.7683666666666666, "p_2nd": 0.2074666666666666, "p_3rd": 0.0214333333333333, "p_advance": 0.9949666666666668, "p_r16": 0.6704666666666667, "p_qf": 0.4741, "p_sf": 0.3654333333333333, "p_final": 0.2197, "p_champ": 0.1396666666666666, "team_es": "España", "p_champ_mean": 0.1123333333333333, "p_champ_lo": 0.04022151335311572, "p_champ_hi": 0.3154933234421363, "avg_points": 7.380166666666667, "avg_gd": 6.358066666666667, "avg_gf": 7.997066666666667, "avg_ga": 1.639}, {"team": "England", "group": "L", "p_1st": 0.7167, "p_2nd": 0.2297666666666666, "p_3rd": 0.0442666666666666, "p_advance": 0.9846, "p_r16": 0.6896, "p_qf": 0.4760666666666667, "p_sf": 0.2907, "p_final": 0.1719666666666666, "p_champ": 0.0895666666666666, "team_es": "Inglaterra", "p_champ_mean": 0.0902, "p_champ_lo": 0.023235698447893555, "p_champ_hi": 0.2504291943828527, "avg_points": 7.068, "avg_gd": 4.6161666666666665, "avg_gf": 6.1115, "avg_ga": 1.4953333333333334}, {"team": "Germany", "group": "E", "p_1st": 0.5576333333333333, "p_2nd": 0.3204333333333333, "p_3rd": 0.1153, "p_advance": 0.9837, "p_r16": 0.6838333333333333, "p_qf": 0.4558333333333333, "p_sf": 0.2484666666666666, "p_final": 0.1334, "p_champ": 0.0562666666666666, "team_es": "Alemania", "p_champ_mean": 0.0412, "p_champ_lo": 0.013656957928802572, "p_champ_hi": 0.1403252427184464, "avg_points": 6.3287, "avg_gd": 4.446666666666666, "avg_gf": 6.334066666666667, "avg_ga": 1.8874}, {"team": "Morocco", "group": "C", "p_1st": 0.4190666666666666, "p_2nd": 0.3854333333333333, "p_3rd": 0.1782, "p_advance": 0.9569333333333332, "p_r16": 0.6015333333333334, "p_qf": 0.3513666666666666, "p_sf": 0.2123, "p_final": 0.1171333333333333, "p_champ": 0.0558, "team_es": "Marruecos", "p_champ_mean": 0.1042666666666666, "p_champ_lo": 0.006127653452685426, "p_champ_hi": 0.21791969309462922, "avg_points": 5.963666666666667, "avg_gd": 2.8518666666666665, "avg_gf": 4.5393, "avg_ga": 1.6874333333333331}, {"team": "France", "group": "I", "p_1st": 0.4226, "p_2nd": 0.3293333333333333, "p_3rd": 0.2037, "p_advance": 0.9176666666666666, "p_r16": 0.5916666666666667, "p_qf": 0.3538666666666666, "p_sf": 0.1989333333333333, "p_final": 0.1094333333333333, "p_champ": 0.0510333333333333, "team_es": "Francia", "p_champ_mean": 0.0532666666666666, "p_champ_lo": 0.003305350438047561, "p_champ_hi": 0.1417947434292865, "avg_points": 5.635166666666667, "avg_gd": 2.2472, "avg_gf": 4.774766666666666, "avg_ga": 2.5275666666666665}, {"team": "Colombia", "group": "K", "p_1st": 0.4419, "p_2nd": 0.3311333333333333, "p_3rd": 0.1530666666666666, "p_advance": 0.8876666666666667, "p_r16": 0.6115, "p_qf": 0.3776666666666666, "p_sf": 0.1929, "p_final": 0.0936666666666666, "p_champ": 0.0492333333333333, "team_es": "Colombia", "p_champ_mean": 0.0714666666666666, "p_champ_lo": 0.011022388059701497, "p_champ_hi": 0.12155627332089543, "avg_points": 5.4368, "avg_gd": 1.760066666666667, "avg_gf": 4.241133333333333, "avg_ga": 2.4810666666666665}, {"team": "Portugal", "group": "K", "p_1st": 0.4330666666666666, "p_2nd": 0.3378, "p_3rd": 0.1570333333333333, "p_advance": 0.8900333333333333, "p_r16": 0.6119333333333333, "p_qf": 0.3729666666666666, "p_sf": 0.1943666666666666, "p_final": 0.0945333333333333, "p_champ": 0.0481, "team_es": "Portugal", "p_champ_mean": 0.0366666666666666, "p_champ_lo": 0.013577318181818206, "p_champ_hi": 0.13026354545454558, "avg_points": 5.425866666666667, "avg_gd": 1.7405, "avg_gf": 4.283066666666667, "avg_ga": 2.542566666666666}, {"team": "Ecuador", "group": "E", "p_1st": 0.3635666666666666, "p_2nd": 0.4463, "p_3rd": 0.1744, "p_advance": 0.9515333333333332, "p_r16": 0.5803666666666667, "p_qf": 0.3476333333333333, "p_sf": 0.1821333333333333, "p_final": 0.0919, "p_champ": 0.0405333333333333, "team_es": "Ecuador", "p_champ_mean": 0.0396, "p_champ_lo": 0.01264107744107743, "p_champ_hi": 0.08244848484848477, "avg_points": 5.757, "avg_gd": 2.3629, "avg_gf": 3.674166666666667, "avg_ga": 1.3112666666666666}, {"team": "Brazil", "group": "C", "p_1st": 0.4535, "p_2nd": 0.3478, "p_3rd": 0.1824, "p_advance": 0.9660666666666666, "p_r16": 0.5844666666666667, "p_qf": 0.3110333333333333, "p_sf": 0.178, "p_final": 0.0896333333333333, "p_champ": 0.0366, "team_es": "Brasil", "p_champ_mean": 0.0371333333333333, "p_champ_lo": 0.0019712746858168775, "p_champ_hi": 0.08299066427289055, "avg_points": 5.9087, "avg_gd": 3.5165, "avg_gf": 5.987566666666667, "avg_ga": 2.4710666666666667}, {"team": "Norway", "group": "I", "p_1st": 0.3696333333333333, "p_2nd": 0.3306666666666666, "p_3rd": 0.2431666666666666, "p_advance": 0.8996333333333333, "p_r16": 0.5524, "p_qf": 0.2967333333333333, "p_sf": 0.1541333333333333, "p_final": 0.0790333333333333, "p_champ": 0.0329666666666666, "team_es": "Noruega", "p_champ_mean": 0.0218, "p_champ_lo": 0.0021927370030580995, "p_champ_hi": 0.11054418960244611, "avg_points": 5.3203, "avg_gd": 1.9276, "avg_gf": 5.097666666666667, "avg_ga": 3.1700666666666666}, {"team": "Uruguay", "group": "H", "p_1st": 0.2144666666666666, "p_2nd": 0.6187666666666667, "p_3rd": 0.1345666666666666, "p_advance": 0.9206, "p_r16": 0.3927, "p_qf": 0.223, "p_sf": 0.1216666666666666, "p_final": 0.0511666666666666, "p_champ": 0.0244666666666666, "team_es": "Uruguay", "p_champ_mean": 0.0296666666666666, "p_champ_lo": 0.002845280898876403, "p_champ_hi": 0.09001808988764032, "avg_points": 5.431666666666667, "avg_gd": 1.8662666666666667, "avg_gf": 4.0126333333333335, "avg_ga": 2.1463666666666668}, {"team": "Switzerland", "group": "B", "p_1st": 0.5623666666666667, "p_2nd": 0.3534333333333333, "p_3rd": 0.0749333333333333, "p_advance": 0.9822333333333332, "p_r16": 0.6874, "p_qf": 0.2906, "p_sf": 0.1423, "p_final": 0.0614333333333333, "p_champ": 0.0239, "team_es": "Suiza", "p_champ_mean": 0.0179333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.05504107806691447, "avg_points": 6.639166666666667, "avg_gd": 4.585166666666667, "avg_gf": 6.960466666666667, "avg_ga": 2.3753}, {"team": "Netherlands", "group": "F", "p_1st": 0.4792333333333333, "p_2nd": 0.3206333333333333, "p_3rd": 0.1442666666666666, "p_advance": 0.9174666666666668, "p_r16": 0.4697666666666666, "p_qf": 0.2365333333333333, "p_sf": 0.1228, "p_final": 0.0561, "p_champ": 0.0213333333333333, "team_es": "Países Bajos", "p_champ_mean": 0.0138, "p_champ_lo": 0.0, "p_champ_hi": 0.06523671497584516, "avg_points": 5.7838, "avg_gd": 2.5530666666666666, "avg_gf": 5.425766666666667, "avg_ga": 2.8727}, {"team": "Japan", "group": "F", "p_1st": 0.3911, "p_2nd": 0.3663666666666667, "p_3rd": 0.1765333333333333, "p_advance": 0.8948666666666667, "p_r16": 0.4342666666666667, "p_qf": 0.2068666666666666, "p_sf": 0.1025666666666666, "p_final": 0.0449, "p_champ": 0.0170666666666666, "team_es": "Japón", "p_champ_mean": 0.0311333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.05487280513918609, "avg_points": 5.406433333333333, "avg_gd": 1.8581666666666667, "avg_gf": 4.6325666666666665, "avg_ga": 2.7744}, {"team": "Belgium", "group": "G", "p_1st": 0.5456, "p_2nd": 0.2685666666666667, "p_3rd": 0.1355666666666666, "p_advance": 0.9253333333333332, "p_r16": 0.5622666666666667, "p_qf": 0.2883, "p_sf": 0.0986, "p_final": 0.0359, "p_champ": 0.0138, "team_es": "Bélgica", "p_champ_mean": 0.0095333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.062389510489510705, "avg_points": 5.923033333333334, "avg_gd": 2.5781666666666667, "avg_gf": 4.7469, "avg_ga": 2.1687333333333334}, {"team": "Senegal", "group": "I", "p_1st": 0.1963666666666666, "p_2nd": 0.2954666666666666, "p_3rd": 0.3885666666666666, "p_advance": 0.7798666666666667, "p_r16": 0.3964333333333333, "p_qf": 0.1839, "p_sf": 0.0786, "p_final": 0.0331666666666666, "p_champ": 0.0119666666666666, "team_es": "Senegal", "p_champ_mean": 0.0202, "p_champ_lo": 0.0, "p_champ_hi": 0.054738613861385774, "avg_points": 4.315633333333333, "avg_gd": 0.3159333333333333, "avg_gf": 3.661566666666667, "avg_ga": 3.345633333333333}, {"team": "Croatia", "group": "L", "p_1st": 0.2366666666666666, "p_2nd": 0.5138333333333334, "p_3rd": 0.1869, "p_advance": 0.8832333333333333, "p_r16": 0.4299666666666666, "p_qf": 0.1857, "p_sf": 0.0850333333333333, "p_final": 0.0323, "p_champ": 0.0113, "team_es": "Croacia", "p_champ_mean": 0.0076, "p_champ_lo": 0.0, "p_champ_hi": 0.03055460526315789, "avg_points": 5.129333333333333, "avg_gd": 1.5757333333333334, "avg_gf": 4.347833333333333, "avg_ga": 2.7721}, {"team": "Austria", "group": "J", "p_1st": 0.1493666666666666, "p_2nd": 0.4222, "p_3rd": 0.3113333333333333, "p_advance": 0.7959666666666667, "p_r16": 0.2988, "p_qf": 0.1484333333333333, "p_sf": 0.067, "p_final": 0.0245333333333333, "p_champ": 0.0093333333333333, "team_es": "Austria", "p_champ_mean": 0.0050666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.028828947368421145, "avg_points": 4.3506, "avg_gd": 0.4848333333333333, "avg_gf": 3.5828, "avg_ga": 3.0979666666666668}, {"team": "Mexico", "group": "A", "p_1st": 0.6365666666666666, "p_2nd": 0.2246666666666666, "p_3rd": 0.0993666666666666, "p_advance": 0.9450666666666668, "p_r16": 0.4924, "p_qf": 0.187, "p_sf": 0.0657, "p_final": 0.0242666666666666, "p_champ": 0.0076333333333333, "team_es": "México", "p_champ_mean": 0.0095333333333333, "p_champ_lo": 0.001161013986013985, "p_champ_hi": 0.022579720279720182, "avg_points": 6.323666666666667, "avg_gd": 3.1008666666666667, "avg_gf": 5.1254, "avg_ga": 2.0245333333333333}, {"team": "Paraguay", "group": "D", "p_1st": 0.2790333333333333, "p_2nd": 0.2738, "p_3rd": 0.2475, "p_advance": 0.7406, "p_r16": 0.3931, "p_qf": 0.1801, "p_sf": 0.0562333333333333, "p_final": 0.0185, "p_champ": 0.0063333333333333, "team_es": "Paraguay", "p_champ_mean": 0.0121333333333333, "p_champ_lo": 0.0010439560439560415, "p_champ_hi": 0.016807692307692215, "avg_points": 4.325966666666667, "avg_gd": 0.3901666666666666, "avg_gf": 3.1846666666666668, "avg_ga": 2.7945}, {"team": "Canada", "group": "B", "p_1st": 0.3973666666666666, "p_2nd": 0.4665, "p_3rd": 0.1174333333333333, "p_advance": 0.9618666666666666, "p_r16": 0.5527333333333333, "p_qf": 0.1923666666666666, "p_sf": 0.0670333333333333, "p_final": 0.022, "p_champ": 0.0062, "team_es": "Canadá", "p_champ_mean": 0.0087333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.03304694656488555, "avg_points": 6.0469333333333335, "avg_gd": 3.3232, "avg_gf": 5.975366666666667, "avg_ga": 2.6521666666666666}, {"team": "Turkey", "group": "D", "p_1st": 0.2964333333333333, "p_2nd": 0.2615666666666666, "p_3rd": 0.2297, "p_advance": 0.7355, "p_r16": 0.3976666666666666, "p_qf": 0.1823, "p_sf": 0.0532333333333333, "p_final": 0.0157666666666666, "p_champ": 0.0050333333333333, "team_es": "Turquía", "p_champ_mean": 0.0033333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.019780999999999917, "avg_points": 4.335466666666667, "avg_gd": 0.3879666666666667, "avg_gf": 3.847333333333333, "avg_ga": 3.4593666666666665}, {"team": "Australia", "group": "D", "p_1st": 0.2166666666666666, "p_2nd": 0.2377666666666666, "p_3rd": 0.2731333333333333, "p_advance": 0.6582333333333333, "p_r16": 0.3148, "p_qf": 0.1284666666666666, "p_sf": 0.0363333333333333, "p_final": 0.0096, "p_champ": 0.0033666666666666, "team_es": "Australia", "p_champ_mean": 0.0089333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.013567164179104259, "avg_points": 3.9017333333333335, "avg_gd": -0.1456666666666666, "avg_gf": 3.033333333333333, "avg_ga": 3.179}, {"team": "Scotland", "group": "C", "p_1st": 0.124, "p_2nd": 0.2499333333333333, "p_3rd": 0.5275, "p_advance": 0.7804666666666666, "p_r16": 0.2903, "p_qf": 0.097, "p_sf": 0.0337, "p_final": 0.0107, "p_champ": 0.0030333333333333, "team_es": "Escocia", "p_champ_mean": 0.0019333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.017180172413793052, "avg_points": 4.020366666666667, "avg_gd": 0.1689, "avg_gf": 3.8845666666666663, "avg_ga": 3.7156666666666665}, {"team": "Algeria", "group": "J", "p_1st": 0.0922, "p_2nd": 0.3097333333333333, "p_3rd": 0.4087, "p_advance": 0.6761666666666667, "p_r16": 0.218, "p_qf": 0.0945, "p_sf": 0.0365666666666666, "p_final": 0.0104333333333333, "p_champ": 0.0028333333333333, "team_es": "Argelia", "p_champ_mean": 0.0062666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.01046675531914888, "avg_points": 3.6694333333333335, "avg_gd": -0.5507666666666666, "avg_gf": 3.1944666666666666, "avg_ga": 3.745233333333333}, {"team": "Iran", "group": "G", "p_1st": 0.2478333333333333, "p_2nd": 0.3341, "p_3rd": 0.2828333333333333, "p_advance": 0.7888, "p_r16": 0.3392666666666666, "p_qf": 0.1116666666666666, "p_sf": 0.0253333333333333, "p_final": 0.0058666666666666, "p_champ": 0.0017666666666666, "team_es": "Irán", "p_champ_mean": 0.0038666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.007493103448275663, "avg_points": 4.4403, "avg_gd": 0.4769, "avg_gf": 3.418266666666667, "avg_ga": 2.9413666666666667}, {"team": "DR Congo", "group": "K", "p_1st": 0.0757666666666666, "p_2nd": 0.1866333333333333, "p_3rd": 0.3699, "p_advance": 0.4774666666666666, "p_r16": 0.1892666666666666, "p_qf": 0.0665333333333333, "p_sf": 0.0216333333333333, "p_final": 0.0050333333333333, "p_champ": 0.0016, "team_es": "RD del Congo", "p_champ_mean": 0.0033333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.008640000000000085, "avg_points": 2.8943666666666665, "avg_gd": -1.4056333333333333, "avg_gf": 1.7563666666666666, "avg_ga": 3.162}, {"team": "Ivory Coast", "group": "E", "p_1st": 0.0764666666666666, "p_2nd": 0.2172666666666666, "p_3rd": 0.5847666666666667, "p_advance": 0.7025333333333333, "p_r16": 0.2436, "p_qf": 0.0787666666666666, "p_sf": 0.0196666666666666, "p_final": 0.0043, "p_champ": 0.0009666666666666, "team_es": "Costa de Marfil", "p_champ_mean": 0.0037333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.005696428571428229, "avg_points": 3.6034, "avg_gd": -0.5486333333333333, "avg_gf": 2.6488, "avg_ga": 3.197433333333333}, {"team": "Egypt", "group": "G", "p_1st": 0.1744666666666666, "p_2nd": 0.2954666666666666, "p_3rd": 0.3430666666666667, "p_advance": 0.7066333333333333, "p_r16": 0.2736666666666666, "p_qf": 0.0816333333333333, "p_sf": 0.0183666666666666, "p_final": 0.0040333333333333, "p_champ": 0.0007666666666666, "team_es": "Egipto", "p_champ_mean": 0.0016666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.0030129999999998127, "avg_points": 3.9937, "avg_gd": -0.0797, "avg_gf": 2.770366666666667, "avg_ga": 2.8500666666666667}, {"team": "United States", "group": "D", "p_1st": 0.2078666666666666, "p_2nd": 0.2268666666666666, "p_3rd": 0.2496666666666666, "p_advance": 0.6189666666666667, "p_r16": 0.2645666666666666, "p_qf": 0.0946333333333333, "p_sf": 0.0192333333333333, "p_final": 0.0039, "p_champ": 0.0007, "team_es": "EEUU", "p_champ_mean": 0.0020666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.0030822580645161945, "avg_points": 3.6662, "avg_gd": -0.6324666666666666, "avg_gf": 3.7450666666666663, "avg_ga": 4.377533333333333}, {"team": "South Korea", "group": "A", "p_1st": 0.1408333333333333, "p_2nd": 0.2862333333333333, "p_3rd": 0.3042666666666667, "p_advance": 0.6383666666666666, "p_r16": 0.2225, "p_qf": 0.0655666666666666, "p_sf": 0.0138333333333333, "p_final": 0.0031666666666666, "p_champ": 0.0005666666666666, "team_es": "Corea del Sur", "p_champ_mean": 0.0014, "p_champ_lo": 0.0, "p_champ_hi": 0.0022869047619044525, "avg_points": 3.6515333333333335, "avg_gd": -0.5946333333333333, "avg_gf": 3.1286666666666667, "avg_ga": 3.7233}, {"team": "Czech Republic", "group": "A", "p_1st": 0.1503, "p_2nd": 0.2952333333333333, "p_3rd": 0.3026333333333333, "p_advance": 0.6595666666666666, "p_r16": 0.2332333333333333, "p_qf": 0.0669, "p_sf": 0.0141, "p_final": 0.0029, "p_champ": 0.0005, "team_es": "Chequia", "p_champ_mean": 0.0002666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.004781250000001008, "avg_points": 3.7290666666666663, "avg_gd": -0.5572333333333334, "avg_gf": 3.4076, "avg_ga": 3.964833333333333}, {"team": "Uzbekistan", "group": "K", "p_1st": 0.0492666666666666, "p_2nd": 0.1444333333333333, "p_3rd": 0.32, "p_advance": 0.3701333333333333, "p_r16": 0.1302333333333333, "p_qf": 0.0368, "p_sf": 0.0104, "p_final": 0.0018666666666666, "p_champ": 0.0004666666666666, "team_es": "Uzbekistán", "p_champ_mean": 0.0012666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.0024131578947365873, "avg_points": 2.4395, "avg_gd": -2.094933333333333, "avg_gf": 1.5921333333333334, "avg_ga": 3.6870666666666665}, {"team": "Sweden", "group": "F", "p_1st": 0.0854333333333333, "p_2nd": 0.1853666666666666, "p_3rd": 0.3619333333333333, "p_advance": 0.504, "p_r16": 0.1567333333333333, "p_qf": 0.0398333333333333, "p_sf": 0.0099666666666666, "p_final": 0.0018666666666666, "p_champ": 0.0004, "team_es": "Suecia", "p_champ_mean": 0.0004, "p_champ_lo": 0.0, "p_champ_hi": 0.0025499999999999, "avg_points": 2.990333333333333, "avg_gd": -1.9826, "avg_gf": 3.4312666666666667, "avg_ga": 5.413866666666666}, {"team": "Tunisia", "group": "F", "p_1st": 0.0442333333333333, "p_2nd": 0.1276333333333333, "p_3rd": 0.3172666666666666, "p_advance": 0.3630666666666666, "p_r16": 0.0973333333333333, "p_qf": 0.0232333333333333, "p_sf": 0.0049, "p_final": 0.0009333333333333, "p_champ": 0.0001666666666666, "team_es": "Túnez", "p_champ_mean": 0.0002, "p_champ_lo": 0.0, "p_champ_hi": 0.001666666666666, "avg_points": 2.3623333333333334, "avg_gd": -2.4286333333333334, "avg_gf": 2.1936666666666667, "avg_ga": 4.6223}, {"team": "Ghana", "group": "L", "p_1st": 0.0251333333333333, "p_2nd": 0.1364333333333333, "p_3rd": 0.3963333333333333, "p_advance": 0.3749666666666666, "p_r16": 0.0769333333333333, "p_qf": 0.0167, "p_sf": 0.0030666666666666, "p_final": 0.0004333333333333, "p_champ": 0.0001333333333333, "team_es": "Ghana", "p_champ_mean": 0.0001333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.002, "avg_points": 2.3347333333333333, "avg_gd": -2.820766666666666, "avg_gf": 2.3153, "avg_ga": 5.136066666666666}, {"team": "Panama", "group": "L", "p_1st": 0.0215, "p_2nd": 0.1199666666666666, "p_3rd": 0.3725, "p_advance": 0.3392333333333333, "p_r16": 0.0632333333333333, "p_qf": 0.0125333333333333, "p_sf": 0.0021333333333333, "p_final": 0.0001666666666666, "p_champ": 6.666666666666667e-05, "team_es": "Panamá", "p_champ_mean": 0.0002666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.000500000000000125, "avg_points": 2.1714333333333333, "avg_gd": -3.3711333333333333, "avg_gf": 2.411233333333333, "avg_ga": 5.782366666666666}, {"team": "Iraq", "group": "I", "p_1st": 0.0114, "p_2nd": 0.0445333333333333, "p_3rd": 0.1645666666666666, "p_advance": 0.1456, "p_r16": 0.0327666666666666, "p_qf": 0.0061666666666666, "p_sf": 0.0007, "p_final": 0.0002333333333333, "p_champ": 3.3333333333333335e-05, "team_es": "Irak", "p_champ_mean": 0.0, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 1.3259666666666667, "avg_gd": -4.490733333333333, "avg_gf": 1.5572333333333332, "avg_ga": 6.0479666666666665}, {"team": "Saudi Arabia", "group": "H", "p_1st": 0.0066666666666666, "p_2nd": 0.0787666666666666, "p_3rd": 0.4052666666666666, "p_advance": 0.2537, "p_r16": 0.0412, "p_qf": 0.0079, "p_sf": 0.0012666666666666, "p_final": 0.0001333333333333, "p_champ": 3.3333333333333335e-05, "team_es": "Arabia Saudí", "p_champ_mean": 0.0, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 1.8579, "avg_gd": -4.0562, "avg_gf": 1.7323666666666666, "avg_ga": 5.788566666666667}, {"team": "Haiti", "group": "C", "p_1st": 0.0034333333333333, "p_2nd": 0.0168333333333333, "p_3rd": 0.1119, "p_advance": 0.0739666666666666, "p_r16": 0.0069666666666666, "p_qf": 0.0005666666666666, "p_sf": 3.3333333333333335e-05, "p_final": 0.0, "p_champ": 0.0, "team_es": "Haití", "p_champ_mean": 0.0, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 0.8398666666666667, "avg_gd": -6.537266666666667, "avg_gf": 1.6224333333333334, "avg_ga": 8.1597}, {"team": "South Africa", "group": "A", "p_1st": 0.0723, "p_2nd": 0.1938666666666666, "p_3rd": 0.2937333333333333, "p_advance": 0.4581, "p_r16": 0.1170333333333333, "p_qf": 0.0265, "p_sf": 0.0038333333333333, "p_final": 0.0005333333333333, "p_champ": 0.0, "team_es": "Sudáfrica", "p_champ_mean": 0.0001333333333333, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 2.748366666666666, "avg_gd": -1.949, "avg_gf": 2.6661, "avg_ga": 4.6151}, {"team": "Qatar", "group": "B", "p_1st": 0.0056, "p_2nd": 0.0370333333333333, "p_3rd": 0.2490666666666666, "p_advance": 0.1494333333333333, "p_r16": 0.0182, "p_qf": 0.0019, "p_sf": 0.0001, "p_final": 3.3333333333333335e-05, "p_champ": 0.0, "team_es": "Catar", "p_champ_mean": 0.0, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 1.3434333333333333, "avg_gd": -5.8135, "avg_gf": 2.208133333333333, "avg_ga": 8.021633333333334}, {"team": "Bosnia and Herzegovina", "group": "B", "p_1st": 0.0346666666666666, "p_2nd": 0.1430333333333333, "p_3rd": 0.5585666666666667, "p_advance": 0.5131333333333333, "p_r16": 0.1346333333333333, "p_qf": 0.0295, "p_sf": 0.0039333333333333, "p_final": 0.0003666666666666, "p_champ": 0.0, "team_es": "Bosnia y Herzegovina", "p_champ_mean": 6.666666666666667e-05, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 2.8527666666666667, "avg_gd": -2.094866666666667, "avg_gf": 2.9774666666666665, "avg_ga": 5.072333333333333}, {"team": "Cape Verde", "group": "H", "p_1st": 0.0105, "p_2nd": 0.095, "p_3rd": 0.4387333333333333, "p_advance": 0.301, "p_r16": 0.0525333333333333, "p_qf": 0.0092666666666666, "p_sf": 0.0013333333333333, "p_final": 6.666666666666667e-05, "p_champ": 0.0, "team_es": "Cabo Verde", "p_champ_mean": 6.666666666666667e-05, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 2.105766666666667, "avg_gd": -4.1681333333333335, "avg_gf": 2.1632666666666664, "avg_ga": 6.3314}, {"team": "New Zealand", "group": "G", "p_1st": 0.0321, "p_2nd": 0.1018666666666666, "p_3rd": 0.2385333333333333, "p_advance": 0.2709, "p_r16": 0.0495, "p_qf": 0.0064666666666666, "p_sf": 0.0006333333333333, "p_final": 6.666666666666667e-05, "p_champ": 0.0, "team_es": "Nueva Zelanda", "p_champ_mean": 6.666666666666667e-05, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 1.9730333333333332, "avg_gd": -2.9753666666666665, "avg_gf": 1.6643, "avg_ga": 4.639666666666667}, {"team": "Curaçao", "group": "E", "p_1st": 0.0023333333333333, "p_2nd": 0.016, "p_3rd": 0.1255333333333333, "p_advance": 0.0684, "p_r16": 0.0064333333333333, "p_qf": 0.0006333333333333, "p_sf": 0.0, "p_final": 0.0, "p_champ": 0.0, "team_es": "Curazao", "p_champ_mean": 0.0, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 0.8752666666666666, "avg_gd": -6.260933333333333, "avg_gf": 1.1070666666666666, "avg_ga": 7.368}, {"team": "Jordan", "group": "J", "p_1st": 0.0124666666666666, "p_2nd": 0.0779, "p_3rd": 0.2233333333333333, "p_advance": 0.2052666666666666, "p_r16": 0.034, "p_qf": 0.0091333333333333, "p_sf": 0.0012333333333333, "p_final": 6.666666666666667e-05, "p_champ": 0.0, "team_es": "Jordania", "p_champ_mean": 0.0002666666666666, "p_champ_lo": 0.0, "p_champ_hi": 0.0, "avg_points": 1.5760666666666667, "avg_gd": -4.3463, "avg_gf": 1.9317666666666664, "avg_ga": 6.278066666666667}];
+const matches = [{"date": "2026-06-11", "home_es": "México", "away_es": "Sudáfrica", "city": "Mexico City", "lambda_h": 1.7449663839813176, "lambda_a": 0.5907817337758389, "score_1": "1-0", "prob_1": 0.1589862174480317, "score_2": "2-0", "prob_2": 0.15023054836144445, "score_3": "1-1", "prob_3": 0.10619678603333134, "score_4": "0-0", "prob_4": 0.10276481525928796, "score_5": "3-0", "prob_5": 0.08960687270517083, "played": false}, {"date": "2026-06-11", "home_es": "Corea del Sur", "away_es": "Chequia", "city": "Zapopan", "lambda_h": 1.1232581457868738, "lambda_a": 1.1373492615404885, "score_1": "1-1", "prob_1": 0.14539399729798658, "score_2": "0-0", "prob_2": 0.11589199672277678, "score_3": "0-1", "prob_3": 0.10645671253284031, "score_4": "1-0", "prob_4": 0.10411058680469915, "score_5": "1-2", "prob_5": 0.07622547170836329, "played": false}, {"date": "2026-06-12", "home_es": "Canadá", "away_es": "Bosnia y Herzegovina", "city": "Toronto", "lambda_h": 1.7602639252271952, "lambda_a": 0.6476001832423585, "score_1": "1-0", "prob_1": 0.140814268461696, "score_2": "2-0", "prob_2": 0.1385328019439588, "score_3": "1-1", "prob_3": 0.10916148338470204, "score_4": "2-1", "prob_4": 0.09234804056924643, "score_5": "0-0", "prob_5": 0.09037332210946929, "played": false}, {"date": "2026-06-12", "home_es": "EEUU", "away_es": "Paraguay", "city": "Inglewood", "lambda_h": 0.990371653685971, "lambda_a": 1.2752057009674742, "score_1": "1-1", "prob_1": 0.1424685887072736, "score_2": "0-1", "prob_2": 0.11320708125810118, "score_3": "0-0", "prob_3": 0.10878329374146685, "score_4": "1-0", "prob_4": 0.08893892280403108, "score_5": "1-2", "prob_5": 0.08437063153226203, "played": false}, {"date": "2026-06-13", "home_es": "Catar", "away_es": "Suiza", "city": "Santa Clara", "lambda_h": 0.5792562495217701, "lambda_a": 3.2772696368124747, "score_1": "0-3", "prob_1": 0.12705472556822942, "score_2": "0-2", "prob_2": 0.11190377561249423, "score_3": "0-4", "prob_3": 0.10819275221632266, "score_4": "1-3", "prob_4": 0.07649212279673205, "score_5": "0-5", "prob_5": 0.07370475410365783, "played": false}, {"date": "2026-06-13", "home_es": "Brasil", "away_es": "Marruecos", "city": "East Rutherford", "lambda_h": 0.757760785264378, "lambda_a": 0.913777723966466, "score_1": "0-0", "prob_1": 0.19018263439371857, "score_2": "0-1", "prob_2": 0.1544968759544068, "score_3": "1-1", "prob_3": 0.14370592700067739, "score_4": "1-0", "prob_4": 0.12865502572827256, "score_5": "0-2", "prob_5": 0.07789788326394011, "played": false}, {"date": "2026-06-13", "home_es": "Haití", "away_es": "Escocia", "city": "Foxborough", "lambda_h": 0.7032647780597331, "lambda_a": 2.247966249208734, "score_1": "0-2", "prob_1": 0.1296524467144154, "score_2": "0-1", "prob_2": 0.10331024164697143, "score_3": "0-3", "prob_3": 0.10130864334052335, "score_4": "1-2", "prob_4": 0.09332567188449288, "score_5": "1-1", "prob_5": 0.08693123355768648, "played": false}, {"date": "2026-06-13", "home_es": "Australia", "away_es": "Turquía", "city": "Vancouver", "lambda_h": 0.9309671305460672, "lambda_a": 1.056919708121874, "score_1": "1-1", "prob_1": 0.14708834486706332, "score_2": "0-0", "prob_2": 0.14064753622239168, "score_3": "0-1", "prob_3": 0.1277118169393207, "score_4": "1-0", "prob_4": 0.11101906953045501, "score_5": "0-2", "prob_5": 0.0764758222259665, "played": false}, {"date": "2026-06-14", "home_es": "Alemania", "away_es": "Curazao", "city": "Houston", "lambda_h": 3.627572509025487, "lambda_a": 0.40881930674661954, "score_1": "3-0", "prob_1": 0.1485949100646151, "score_2": "4-0", "prob_2": 0.13982532024350539, "score_3": "2-0", "prob_3": 0.11843588445922036, "score_4": "5-0", "prob_4": 0.10525862654486469, "score_5": "6-0", "prob_5": 0.06603106911547786, "played": false}, {"date": "2026-06-14", "home_es": "Costa de Marfil", "away_es": "Ecuador", "city": "Philadelphia", "lambda_h": 0.31560407405746743, "lambda_a": 0.8612777796819195, "score_1": "0-0", "prob_1": 0.3034592303355249, "score_2": "0-1", "prob_2": 0.2571357429701576, "score_3": "0-2", "prob_3": 0.11875371920599696, "score_4": "1-1", "prob_4": 0.09326369610229089, "score_5": "1-0", "prob_5": 0.08746401670399122, "played": false}, {"date": "2026-06-14", "home_es": "Países Bajos", "away_es": "Japón", "city": "Arlington", "lambda_h": 1.180806183782747, "lambda_a": 1.1333245535308945, "score_1": "1-1", "prob_1": 0.14288093054377587, "score_2": "0-0", "prob_2": 0.10400176391408265, "score_3": "1-0", "prob_3": 0.10103581116377824, "score_4": "0-1", "prob_4": 0.09448626965093584, "score_5": "2-1", "prob_5": 0.0804118023164091, "played": false}, {"date": "2026-06-14", "home_es": "Suecia", "away_es": "Túnez", "city": "Guadalupe", "lambda_h": 1.3152471159171626, "lambda_a": 0.9807367543820679, "score_1": "1-1", "prob_1": 0.14085154741586237, "score_2": "1-0", "prob_2": 0.1145608679765905, "score_3": "0-0", "prob_3": 0.1059220312840839, "score_4": "2-1", "prob_4": 0.08666428904655923, "score_5": "2-0", "prob_5": 0.08491004387378606, "played": false}, {"date": "2026-06-15", "home_es": "Bélgica", "away_es": "Egipto", "city": "Seattle", "lambda_h": 1.2175024850818408, "lambda_a": 0.6974941344396882, "score_1": "1-0", "prob_1": 0.16329350709822474, "score_2": "0-0", "prob_2": 0.14908385597797852, "score_3": "1-1", "prob_3": 0.1361981130518589, "score_4": "2-0", "prob_4": 0.11092625280541095, "score_5": "0-1", "prob_5": 0.08681050971700706, "played": false}, {"date": "2026-06-15", "home_es": "Irán", "away_es": "Nueva Zelanda", "city": "Inglewood", "lambda_h": 1.4393148556267121, "lambda_a": 0.5790009554472261, "score_1": "1-0", "prob_1": 0.17452273647403208, "score_2": "2-0", "prob_2": 0.13609300568147648, "score_3": "0-0", "prob_3": 0.13565294358864083, "score_4": "1-1", "prob_4": 0.12179143354135566, "score_5": "2-1", "prob_5": 0.08216982028478852, "played": false}, {"date": "2026-06-15", "home_es": "España", "away_es": "Cabo Verde", "city": "Atlanta", "lambda_h": 3.359204786788647, "lambda_a": 0.5190404199385161, "score_1": "3-0", "prob_1": 0.13434488737788036, "score_2": "4-0", "prob_2": 0.11992752230330483, "score_3": "2-0", "prob_3": 0.11287160205975914, "score_4": "5-0", "prob_4": 0.08564589772801587, "score_5": "3-1", "prob_5": 0.07210065195665417, "played": false}, {"date": "2026-06-15", "home_es": "Arabia Saudí", "away_es": "Uruguay", "city": "Miami Gardens", "lambda_h": 0.3519873136427775, "lambda_a": 1.4327918128606776, "score_1": "0-1", "prob_1": 0.22352254002844035, "score_2": "0-2", "prob_2": 0.1745726010930339, "score_3": "0-0", "prob_3": 0.16105101295592195, "score_4": "1-1", "prob_4": 0.09274589526289483, "score_5": "0-3", "prob_5": 0.0878315399998242, "played": false}, {"date": "2026-06-16", "home_es": "Francia", "away_es": "Senegal", "city": "East Rutherford", "lambda_h": 1.212989278349114, "lambda_a": 0.8190968654783684, "score_1": "1-0", "prob_1": 0.14256373683471096, "score_2": "1-1", "prob_2": 0.14136668682087739, "score_3": "0-0", "prob_3": 0.13398534993315975, "score_4": "2-0", "prob_4": 0.09767934368632183, "score_5": "0-1", "prob_5": 0.0904843455351652, "played": false}, {"date": "2026-06-16", "home_es": "Irak", "away_es": "Noruega", "city": "Foxborough", "lambda_h": 0.5723518070980219, "lambda_a": 2.2387874902831935, "score_1": "0-2", "prob_1": 0.14841606490219048, "score_2": "0-1", "prob_2": 0.1203098918710505, "score_3": "0-3", "prob_3": 0.11549675442516211, "score_4": "1-2", "prob_4": 0.08694518026972896, "score_5": "1-1", "prob_5": 0.08131995774537486, "played": false}, {"date": "2026-06-16", "home_es": "Argentina", "away_es": "Argelia", "city": "Kansas City", "lambda_h": 1.5679708337386293, "lambda_a": 0.4356122223627079, "score_1": "1-0", "prob_1": 0.19689792868235645, "score_2": "2-0", "prob_2": 0.1671395760290681, "score_3": "0-0", "prob_3": 0.1344067297675513, "score_4": "1-1", "prob_4": 0.09951932409662088, "score_5": "3-0", "prob_5": 0.0907310829306169, "played": false}, {"date": "2026-06-16", "home_es": "Austria", "away_es": "Jordania", "city": "Santa Clara", "lambda_h": 1.8094014851373807, "lambda_a": 0.6928247697755145, "score_1": "1-0", "prob_1": 0.13301581489394895, "score_2": "2-0", "prob_2": 0.13135397018504413, "score_3": "1-1", "prob_3": 0.11188944809735528, "score_4": "2-1", "prob_4": 0.09452064641311804, "score_5": "0-0", "prob_5": 0.08661532420398019, "played": false}, {"date": "2026-06-17", "home_es": "Portugal", "away_es": "RD del Congo", "city": "Houston", "lambda_h": 1.2609246380662988, "lambda_a": 0.5534740844855391, "score_1": "1-0", "prob_1": 0.19432184311497594, "score_2": "0-0", "prob_2": 0.170632709861979, "score_3": "2-0", "prob_3": 0.1307919924402183, "score_4": "1-1", "prob_4": 0.1237830351401505, "score_5": "0-1", "prob_5": 0.07832966761525216, "played": false}, {"date": "2026-06-17", "home_es": "Uzbekistán", "away_es": "Colombia", "city": "Mexico City", "lambda_h": 0.5042798092100593, "lambda_a": 1.4225938111344947, "score_1": "0-1", "prob_1": 0.196631619898069, "score_2": "0-0", "prob_2": 0.1516168774973242, "score_3": "0-2", "prob_3": 0.14945908947276595, "score_4": "1-1", "prob_4": 0.11286863556425246, "score_5": "1-2", "prob_5": 0.07496277899725352, "played": false}, {"date": "2026-06-17", "home_es": "Inglaterra", "away_es": "Croacia", "city": "Arlington", "lambda_h": 1.2815081883215587, "lambda_a": 0.622081859893929, "score_1": "1-0", "prob_1": 0.17574087175049435, "score_2": "0-0", "prob_2": 0.15105506761743456, "score_3": "1-1", "prob_3": 0.1291985242491923, "score_4": "2-0", "prob_4": 0.12418391757825899, "score_5": "2-1", "prob_5": 0.07875484063755399, "played": false}, {"date": "2026-06-17", "home_es": "Ghana", "away_es": "Panamá", "city": "Toronto", "lambda_h": 1.202122017658359, "lambda_a": 1.1388549829025372, "score_1": "1-1", "prob_1": 0.14245104698376798, "score_2": "0-0", "prob_2": 0.10198442431836778, "score_3": "1-0", "prob_3": 0.09833351796720516, "score_4": "0-1", "prob_4": 0.09449439005730244, "score_5": "2-1", "prob_5": 0.07994969404510704, "played": false}, {"date": "2026-06-18", "home_es": "Chequia", "away_es": "Sudáfrica", "city": "Atlanta", "lambda_h": 1.375011686980002, "lambda_a": 1.0220856248301735, "score_1": "1-1", "prob_1": 0.13603966281199628, "score_2": "1-0", "prob_2": 0.10369379693998076, "score_3": "2-1", "prob_3": 0.09071355253785134, "score_4": "0-0", "prob_4": 0.09050594504253302, "score_5": "2-0", "prob_5": 0.08381522238041367, "played": false}, {"date": "2026-06-18", "home_es": "México", "away_es": "Corea del Sur", "city": "Zapopan", "lambda_h": 1.4433595343419017, "lambda_a": 0.6492610586868053, "score_1": "1-0", "prob_1": 0.15670702139305367, "score_2": "2-0", "prob_2": 0.1291557152731925, "score_3": "1-1", "prob_3": 0.12406326651627335, "score_4": "0-0", "prob_4": 0.11857023789038329, "score_5": "2-1", "prob_5": 0.08781252736200863, "played": false}, {"date": "2026-06-18", "home_es": "Suiza", "away_es": "Bosnia y Herzegovina", "city": "Inglewood", "lambda_h": 2.0841698933093857, "lambda_a": 0.6148933306022898, "score_1": "2-0", "prob_1": 0.14421903862409732, "score_2": "1-0", "prob_2": 0.12601805203734312, "score_3": "3-0", "prob_3": 0.10366575079460044, "score_4": "1-1", "prob_4": 0.09207513511687687, "score_5": "2-1", "prob_5": 0.09093154418271254, "played": false}, {"date": "2026-06-18", "home_es": "Canadá", "away_es": "Catar", "city": "Vancouver", "lambda_h": 2.767941103766375, "lambda_a": 0.6100675266182221, "score_1": "2-0", "prob_1": 0.12830952674714166, "score_2": "3-0", "prob_2": 0.12479323437360479, "score_3": "4-0", "prob_3": 0.0910299788735623, "score_4": "1-0", "prob_4": 0.08299408580176575, "score_5": "2-1", "prob_5": 0.07878314062015519, "played": false}, {"date": "2026-06-19", "home_es": "Escocia", "away_es": "Marruecos", "city": "Foxborough", "lambda_h": 0.5219018626305796, "lambda_a": 1.1670177369855088, "score_1": "0-1", "prob_1": 0.19948959188549498, "score_2": "0-0", "prob_2": 0.18627671193472028, "score_3": "0-2", "prob_3": 0.12540665974021759, "score_4": "1-1", "prob_4": 0.1247640472637388, "score_5": "1-0", "prob_5": 0.08518329810940492, "played": false}, {"date": "2026-06-19", "home_es": "Brasil", "away_es": "Haití", "city": "Philadelphia", "lambda_h": 3.263871605405573, "lambda_a": 0.5506580301865492, "score_1": "3-0", "prob_1": 0.13204645092547546, "score_2": "2-0", "prob_2": 0.11639053665721212, "score_3": "4-0", "prob_3": 0.11235620418200185, "score_4": "5-0", "prob_4": 0.07648167159183945, "score_5": "3-1", "prob_5": 0.07442352758502412, "played": false}, {"date": "2026-06-19", "home_es": "EEUU", "away_es": "Australia", "city": "Seattle", "lambda_h": 1.131396336968736, "lambda_a": 1.2500062889463062, "score_1": "1-1", "prob_1": 0.14110384152012215, "score_2": "0-0", "prob_2": 0.0974820290639348, "score_3": "0-1", "prob_3": 0.09666852351135151, "score_4": "1-0", "prob_4": 0.09010184159932329, "score_5": "1-2", "prob_5": 0.08191113948891669, "played": false}, {"date": "2026-06-19", "home_es": "Turquía", "away_es": "Paraguay", "city": "Santa Clara", "lambda_h": 0.925178281865764, "lambda_a": 0.9497348955631301, "score_1": "0-0", "prob_1": 0.15656178446215424, "score_2": "1-1", "prob_2": 0.14760045320781037, "score_3": "0-1", "prob_3": 0.1290359695312222, "score_4": "1-0", "prob_4": 0.12537878234319352, "score_5": "0-2", "prob_5": 0.06939096105741197, "played": false}, {"date": "2026-06-20", "home_es": "Alemania", "away_es": "Costa de Marfil", "city": "Toronto", "lambda_h": 1.6779342140188696, "lambda_a": 0.638353638082531, "score_1": "1-0", "prob_1": 0.14885784541629132, "score_2": "2-0", "prob_2": 0.13888011023853858, "score_3": "1-1", "prob_3": 0.11289887705135422, "score_4": "0-0", "prob_4": 0.09976222921818553, "score_5": "2-1", "prob_5": 0.09069550942653129, "played": false}, {"date": "2026-06-20", "home_es": "Ecuador", "away_es": "Curazao", "city": "Kansas City", "lambda_h": 1.8620203164732094, "lambda_a": 0.20212156877517676, "score_1": "1-0", "prob_1": 0.22257389818578135, "score_2": "2-0", "prob_2": 0.2208167492493254, "score_3": "3-0", "prob_3": 0.14327755435560927, "score_4": "0-0", "prob_4": 0.12085926719622243, "score_5": "4-0", "prob_5": 0.06972452605580805, "played": false}, {"date": "2026-06-20", "home_es": "Países Bajos", "away_es": "Suecia", "city": "Houston", "lambda_h": 2.2668985403346738, "lambda_a": 1.0578119352950537, "score_1": "2-1", "prob_1": 0.09749576091652286, "score_2": "1-1", "prob_2": 0.09023743517331007, "score_3": "2-0", "prob_3": 0.09022862057322771, "score_4": "3-1", "prob_4": 0.07666995762341404, "score_5": "3-0", "prob_5": 0.07095513128710902, "played": false}, {"date": "2026-06-20", "home_es": "Túnez", "away_es": "Japón", "city": "Guadalupe", "lambda_h": 0.5108565750218343, "lambda_a": 1.4091369180986257, "score_1": "0-1", "prob_1": 0.19087833408895716, "score_2": "0-0", "prob_2": 0.14920087920119182, "score_3": "0-2", "prob_3": 0.1444230861590191, "score_4": "1-1", "prob_4": 0.1164769203643422, "score_5": "1-2", "prob_5": 0.07678285750014888, "played": false}, {"date": "2026-06-21", "home_es": "Bélgica", "away_es": "Irán", "city": "Inglewood", "lambda_h": 1.3608886175297497, "lambda_a": 0.8974797294218003, "score_1": "1-1", "prob_1": 0.13750926981498252, "score_2": "1-0", "prob_2": 0.12555286922387457, "score_3": "0-0", "prob_3": 0.10817582048467711, "score_4": "2-0", "prob_4": 0.0972890279745355, "score_5": "2-1", "prob_5": 0.08936964936862223, "played": false}, {"date": "2026-06-21", "home_es": "Nueva Zelanda", "away_es": "Egipto", "city": "Vancouver", "lambda_h": 0.5179961776749505, "lambda_a": 1.118592026650349, "score_1": "0-1", "prob_1": 0.20181628691411801, "score_2": "0-0", "prob_2": 0.19599177125430536, "score_3": "1-1", "prob_3": 0.12522536524806716, "score_4": "0-2", "prob_4": 0.12155700952345978, "score_5": "1-0", "prob_5": 0.08965532092387052, "played": false}, {"date": "2026-06-21", "home_es": "España", "away_es": "Arabia Saudí", "city": "Atlanta", "lambda_h": 2.938807861877263, "lambda_a": 0.3888169781772464, "score_1": "3-0", "prob_1": 0.15553670186013477, "score_2": "2-0", "prob_2": 0.14981820941575183, "score_3": "4-0", "prob_3": 0.12110509990675884, "score_4": "1-0", "prob_4": 0.09264641380289484, "score_5": "5-0", "prob_5": 0.0754365756661845, "played": false}, {"date": "2026-06-21", "home_es": "Uruguay", "away_es": "Cabo Verde", "city": "Miami Gardens", "lambda_h": 1.637752906091206, "lambda_a": 0.46987568275090513, "score_1": "1-0", "prob_1": 0.18002345068593675, "score_2": "2-0", "prob_2": 0.16307738703369784, "score_3": "0-0", "prob_3": 0.11737131466003091, "score_4": "1-1", "prob_4": 0.10057667258662716, "score_5": "3-0", "prob_5": 0.09406679123856485, "played": false}, {"date": "2026-06-22", "home_es": "Francia", "away_es": "Irak", "city": "Philadelphia", "lambda_h": 1.9117025440009783, "lambda_a": 0.4237307649099815, "score_1": "2-0", "prob_1": 0.1762064506160134, "score_2": "1-0", "prob_2": 0.1697443208974565, "score_3": "3-0", "prob_3": 0.11708954475389263, "score_4": "0-0", "prob_4": 0.09571428438282656, "score_5": "1-1", "prob_5": 0.08370618077331765, "played": false}, {"date": "2026-06-22", "home_es": "Noruega", "away_es": "Senegal", "city": "East Rutherford", "lambda_h": 1.4205270745375151, "lambda_a": 1.1063902127674516, "score_1": "1-1", "prob_1": 0.13430974564321457, "score_2": "1-0", "prob_2": 0.09734429969785847, "score_3": "2-1", "prob_3": 0.09111555788965486, "score_4": "0-0", "prob_4": 0.08462605645072963, "score_5": "2-0", "prob_5": 0.08046048979642087, "played": false}, {"date": "2026-06-22", "home_es": "Argentina", "away_es": "Austria", "city": "Arlington", "lambda_h": 1.3182391980208803, "lambda_a": 0.4614255491731811, "score_1": "1-0", "prob_1": 0.20826532706207648, "score_2": "0-0", "prob_2": 0.16837079680219996, "score_3": "2-0", "prob_3": 0.14900681099018848, "score_4": "1-1", "prob_4": 0.11178398339700997, "score_5": "2-1", "prob_5": 0.07009259216390472, "played": false}, {"date": "2026-06-22", "home_es": "Jordania", "away_es": "Argelia", "city": "Santa Clara", "lambda_h": 0.8240758077370421, "lambda_a": 1.7081789326564885, "score_1": "1-1", "prob_1": 0.12145253825411387, "score_2": "0-1", "prob_2": 0.1197623517503512, "score_3": "0-2", "prob_3": 0.11316583390711675, "score_4": "1-2", "prob_4": 0.09685957650594462, "score_5": "0-0", "prob_5": 0.08484524988355106, "played": false}, {"date": "2026-06-23", "home_es": "Portugal", "away_es": "Uzbekistán", "city": "Houston", "lambda_h": 1.4600614011079447, "lambda_a": 0.5292396637512403, "score_1": "1-0", "prob_1": 0.18593229382522122, "score_2": "2-0", "prob_2": 0.14686866627221273, "score_3": "0-0", "prob_3": 0.1398730947431466, "score_4": "1-1", "prob_4": 0.11478423067791071, "score_5": "2-1", "prob_5": 0.07895024575318765, "played": false}, {"date": "2026-06-23", "home_es": "Colombia", "away_es": "RD del Congo", "city": "Zapopan", "lambda_h": 1.228567226733708, "lambda_a": 0.5273712929011848, "score_1": "1-0", "prob_1": 0.19919535941757646, "score_2": "0-0", "prob_2": 0.174962582744615, "score_3": "2-0", "prob_3": 0.13312918296116313, "score_4": "1-1", "prob_4": 0.12174499169182633, "score_5": "0-1", "prob_5": 0.07747716503506753, "played": false}, {"date": "2026-06-23", "home_es": "Inglaterra", "away_es": "Ghana", "city": "Foxborough", "lambda_h": 2.072779626880764, "lambda_a": 0.3945153810083728, "score_1": "2-0", "prob_1": 0.18067249410586103, "score_2": "1-0", "prob_2": 0.16064605448200403, "score_3": "3-0", "prob_3": 0.1304336826885616, "score_4": "0-0", "prob_4": 0.08322934464811338, "score_5": "1-1", "prob_5": 0.07370023848096843, "played": false}, {"date": "2026-06-23", "home_es": "Panamá", "away_es": "Croacia", "city": "Toronto", "lambda_h": 0.7041037874811014, "lambda_a": 1.8955364899917135, "score_1": "0-2", "prob_1": 0.13010195163035013, "score_2": "0-1", "prob_2": 0.12481093805714771, "score_3": "1-1", "prob_3": 0.10750924369093474, "score_4": "1-2", "prob_4": 0.09571639466246773, "score_5": "0-3", "prob_5": 0.08430723307683917, "played": false}, {"date": "2026-06-24", "home_es": "México", "away_es": "Chequia", "city": "Mexico City", "lambda_h": 1.5972338643173005, "lambda_a": 0.72749097990113, "score_1": "1-0", "prob_1": 0.13877384485448818, "score_2": "2-0", "prob_2": 0.12625621481313987, "score_3": "1-1", "prob_3": 0.1200673692637067, "score_4": "0-0", "prob_4": 0.09785538378865857, "score_5": "2-1", "prob_5": 0.09327157597918506, "played": false}, {"date": "2026-06-24", "home_es": "Sudáfrica", "away_es": "Corea del Sur", "city": "Guadalupe", "lambda_h": 0.9236199309754715, "lambda_a": 1.227151357555931, "score_1": "1-1", "prob_1": 0.14321785634895542, "score_2": "0-1", "prob_2": 0.12421578733910502, "score_3": "0-0", "prob_3": 0.11936021014874879, "score_4": "1-0", "prob_4": 0.09128581216751672, "score_5": "0-2", "prob_5": 0.08649341448189553, "played": false}, {"date": "2026-06-24", "home_es": "Canadá", "away_es": "Suiza", "city": "Vancouver", "lambda_h": 1.06860915903843, "lambda_a": 1.3325435209983754, "score_1": "1-1", "prob_1": 0.13993954646720147, "score_2": "0-1", "prob_2": 0.10202420195763695, "score_3": "0-0", "prob_3": 0.0966058358390554, "score_4": "1-2", "prob_4": 0.08595211892615591, "score_5": "1-0", "prob_5": 0.08380907325824324, "played": false}, {"date": "2026-06-24", "home_es": "Bosnia y Herzegovina", "away_es": "Catar", "city": "Seattle", "lambda_h": 1.592713771738014, "lambda_a": 0.9541784953566037, "score_1": "1-1", "prob_1": 0.12830460773742383, "score_2": "1-0", "prob_2": 0.10825151158948737, "score_3": "2-0", "prob_3": 0.0972030649845331, "score_4": "2-1", "prob_4": 0.09596445950289811, "score_5": "0-0", "prob_5": 0.08367196207520941, "played": false}, {"date": "2026-06-24", "home_es": "Escocia", "away_es": "Brasil", "city": "Miami Gardens", "lambda_h": 0.9047586844389123, "lambda_a": 1.6776946906828565, "score_1": "1-1", "prob_1": 0.12300434180173993, "score_2": "0-1", "prob_2": 0.1101937258019557, "score_3": "0-2", "prob_3": 0.10445731456938931, "score_4": "1-2", "prob_4": 0.09763848075365031, "score_5": "0-0", "prob_5": 0.07988095291526398, "played": false}, {"date": "2026-06-24", "home_es": "Marruecos", "away_es": "Haití", "city": "Atlanta", "lambda_h": 2.270374982948376, "lambda_a": 0.31764210343564825, "score_1": "2-0", "prob_1": 0.19177534697375065, "score_2": "1-0", "prob_2": 0.15859724498827626, "score_3": "3-0", "prob_3": 0.1499403469039351, "score_4": "4-0", "prob_4": 0.08792360951672397, "score_5": "0-0", "prob_5": 0.07464001354749576, "played": false}, {"date": "2026-06-25", "home_es": "EEUU", "away_es": "Turquía", "city": "Inglewood", "lambda_h": 1.3484491375601322, "lambda_a": 1.691373991038017, "score_1": "1-1", "prob_1": 0.11598092453064279, "score_2": "1-2", "prob_2": 0.0910999516376613, "score_3": "2-1", "prob_3": 0.07538839327348759, "score_4": "0-1", "prob_4": 0.06509806737788768, "score_5": "2-2", "prob_5": 0.06464989536822285, "played": false}, {"date": "2026-06-25", "home_es": "Paraguay", "away_es": "Australia", "city": "Santa Clara", "lambda_h": 0.7968610398429606, "lambda_a": 0.683751007675717, "score_1": "0-0", "prob_1": 0.22818069795564425, "score_2": "1-0", "prob_2": 0.16677173882164287, "score_3": "0-1", "prob_3": 0.14145842610588918, "score_4": "1-1", "prob_4": 0.13753384563752732, "score_5": "2-0", "prob_5": 0.07340614995464464, "played": false}, {"date": "2026-06-25", "home_es": "Curazao", "away_es": "Costa de Marfil", "city": "Philadelphia", "lambda_h": 0.4639650737559243, "lambda_a": 1.5662331142300259, "score_1": "0-1", "prob_1": 0.18994770110093356, "score_2": "0-2", "prob_2": 0.16114715131712704, "score_3": "0-0", "prob_3": 0.13121671098957627, "score_4": "1-1", "prob_4": 0.10392269267916225, "score_5": "0-3", "prob_5": 0.0871350554985632, "played": false}, {"date": "2026-06-25", "home_es": "Ecuador", "away_es": "Alemania", "city": "East Rutherford", "lambda_h": 0.7589083849683504, "lambda_a": 0.7309746246491181, "score_1": "0-0", "prob_1": 0.22589770973902987, "score_2": "1-0", "prob_2": 0.1562197103422524, "score_3": "0-1", "prob_3": 0.1505261125809185, "score_4": "1-1", "prob_4": 0.13876445275629343, "score_5": "2-0", "prob_5": 0.0657810254964031, "played": false}, {"date": "2026-06-25", "home_es": "Japón", "away_es": "Suecia", "city": "Arlington", "lambda_h": 1.8948946961212607, "lambda_a": 0.9212675648321947, "score_1": "1-1", "prob_1": 0.11094057859900981, "score_2": "2-0", "prob_2": 0.10450281063000119, "score_3": "2-1", "prob_3": 0.09986201532072284, "score_4": "1-0", "prob_4": 0.09701208675035107, "score_5": "3-0", "prob_5": 0.06846653835022946, "played": false}, {"date": "2026-06-25", "home_es": "Túnez", "away_es": "Países Bajos", "city": "Kansas City", "lambda_h": 0.5865724604995501, "lambda_a": 1.6857772779184854, "score_1": "0-1", "prob_1": 0.15669359009608214, "score_2": "0-2", "prob_2": 0.14509774968543301, "score_3": "1-1", "prob_3": 0.11024119309413892, "score_4": "0-0", "prob_4": 0.10417771960336251, "score_5": "1-2", "prob_5": 0.08828134072938731, "played": false}, {"date": "2026-06-26", "home_es": "Egipto", "away_es": "Irán", "city": "Seattle", "lambda_h": 0.8112267156389978, "lambda_a": 0.9338424412171703, "score_1": "0-0", "prob_1": 0.17707419997557336, "score_2": "0-1", "prob_2": 0.14680285756297798, "score_3": "1-1", "prob_3": 0.1455175105645536, "score_4": "1-0", "prob_4": 0.12592122635206504, "score_5": "0-2", "prob_5": 0.07671580828904916, "played": false}, {"date": "2026-06-26", "home_es": "Nueva Zelanda", "away_es": "Bélgica", "city": "Vancouver", "lambda_h": 0.4978260238154333, "lambda_a": 1.8765150695621575, "score_1": "0-2", "prob_1": 0.16230516480145898, "score_2": "0-1", "prob_2": 0.15953757400147828, "score_3": "0-3", "prob_3": 0.10488479599404271, "score_4": "0-0", "prob_4": 0.09427237509570749, "score_5": "1-1", "prob_5": 0.09401986724477356, "played": false}, {"date": "2026-06-26", "home_es": "Cabo Verde", "away_es": "Arabia Saudí", "city": "Houston", "lambda_h": 1.0989998019391134, "lambda_a": 0.9410375271076566, "score_1": "1-1", "prob_1": 0.14675043983077152, "score_2": "0-0", "prob_2": 0.14146420565510595, "score_3": "1-0", "prob_3": 0.130466275206053, "score_4": "0-1", "prob_4": 0.10920952470723896, "score_5": "2-0", "prob_5": 0.07896126463793549, "played": false}, {"date": "2026-06-26", "home_es": "Uruguay", "away_es": "España", "city": "Zapopan", "lambda_h": 0.6766851667484423, "lambda_a": 1.2564828020322154, "score_1": "0-1", "prob_1": 0.16951197301391402, "score_2": "0-0", "prob_2": 0.15566293267128353, "score_3": "1-1", "prob_3": 0.134848315783131, "score_4": "0-2", "prob_4": 0.11330318814354678, "score_5": "1-0", "prob_5": 0.08723684340656024, "played": false}, {"date": "2026-06-26", "home_es": "Noruega", "away_es": "Francia", "city": "Foxborough", "lambda_h": 1.171699502267887, "lambda_a": 1.3514399510875048, "score_1": "1-1", "prob_1": 0.13625428680145224, "score_2": "0-1", "prob_2": 0.0916454155262073, "score_3": "1-2", "prob_3": 0.08712335072217071, "score_4": "0-0", "prob_4": 0.08529572566852069, "score_5": "1-0", "prob_5": 0.07793338274378607, "played": false}, {"date": "2026-06-26", "home_es": "Senegal", "away_es": "Irak", "city": "Toronto", "lambda_h": 1.5650632369594424, "lambda_a": 0.5137162068466098, "score_1": "1-0", "prob_1": 0.179850790219665, "score_2": "2-0", "prob_2": 0.15284413761928603, "score_3": "0-0", "prob_3": 0.12613564771647362, "score_4": "1-1", "prob_4": 0.10954736040627995, "score_5": "3-0", "prob_5": 0.08237753975400812, "played": false}, {"date": "2026-06-27", "home_es": "Argelia", "away_es": "Austria", "city": "Kansas City", "lambda_h": 0.904416591490013, "lambda_a": 1.13949876987773, "score_1": "1-1", "prob_1": 0.1452664056864326, "score_2": "0-0", "prob_2": 0.13125363487996, "score_3": "0-1", "prob_3": 0.12905642047272084, "score_4": "1-0", "prob_4": 0.09991256496795176, "score_5": "0-2", "prob_5": 0.08382021611964743, "played": false}, {"date": "2026-06-27", "home_es": "Jordania", "away_es": "Argentina", "city": "Arlington", "lambda_h": 0.33369902820184605, "lambda_a": 2.489769037243627, "score_1": "0-2", "prob_1": 0.18069969678424108, "score_2": "0-3", "prob_2": 0.15617768564788193, "score_3": "0-1", "prob_3": 0.13493613155318543, "score_4": "0-4", "prob_4": 0.10123759168555428, "score_5": "1-2", "prob_5": 0.06279659817587938, "played": false}, {"date": "2026-06-27", "home_es": "Colombia", "away_es": "Portugal", "city": "Miami Gardens", "lambda_h": 1.3254392531160482, "lambda_a": 1.2961916757485314, "score_1": "1-1", "prob_1": 0.1299690078202258, "score_2": "2-1", "prob_2": 0.08401578172730025, "score_3": "1-2", "prob_3": 0.08315374365741184, "score_4": "1-0", "prob_4": 0.07428783079798097, "score_5": "0-1", "prob_5": 0.07341351190989054, "played": false}, {"date": "2026-06-27", "home_es": "RD del Congo", "away_es": "Uzbekistán", "city": "Atlanta", "lambda_h": 0.5940436767368928, "lambda_a": 0.4905592651219097, "score_1": "0-0", "prob_1": 0.32247092299237334, "score_2": "1-0", "prob_2": 0.18951289402571783, "score_3": "0-1", "prob_3": 0.15482612401177814, "score_4": "1-1", "prob_4": 0.11425081512731261, "score_5": "2-0", "prob_5": 0.06336135374409758, "played": false}, {"date": "2026-06-27", "home_es": "Panamá", "away_es": "Inglaterra", "city": "East Rutherford", "lambda_h": 0.43406195350901816, "lambda_a": 2.4072491250649524, "score_1": "0-2", "prob_1": 0.16625428501139947, "score_2": "0-3", "prob_2": 0.13809902597968393, "score_3": "0-1", "prob_3": 0.12793091115688449, "score_4": "0-4", "prob_4": 0.08603390722484126, "score_5": "1-2", "prob_5": 0.07470377582064777, "played": false}, {"date": "2026-06-27", "home_es": "Croacia", "away_es": "Ghana", "city": "Philadelphia", "lambda_h": 1.6321656855344724, "lambda_a": 0.6399542087066928, "score_1": "1-0", "prob_1": 0.15130176007120344, "score_2": "2-0", "prob_2": 0.1360931494709499, "score_3": "1-1", "prob_3": 0.1165152243312352, "score_4": "0-0", "prob_4": 0.10513982303732163, "score_5": "2-1", "prob_5": 0.0901577675498646, "played": false}];
+const groupChar = {};
+teams.forEach(t => { groupChar[t.team_es] = t.group; });
+
+function fmtSmall(n) {
+  if (n < 0.001) return '<0.1%';
+  return (n*100).toFixed(1) + '%';
+}
+
+function ciStrip(mean, lo, hi, maxScale) {
+  const m = (mean/maxScale)*100;
+  const l = (lo/maxScale)*100;
+  const h = (hi/maxScale)*100;
+  return `<div class="ci-strip">
+    <div class="ci-range" style="left: ${l}%; right: ${100-h}%"></div>
+    <div class="ci-mean" style="left: ${m}%"></div>
+    <span class="ci-label">${(mean*100).toFixed(1)}% [${(lo*100).toFixed(1)}–${(hi*100).toFixed(1)}]</span>
+  </div>`;
+}
+
+function renderLeaderboard() {
+  const sorted = [...teams].sort((a,b) => b.p_champ - a.p_champ);
+  const top = sorted[0];
+  const maxHi = Math.max(...sorted.map(t => t.p_champ_hi || t.p_champ*2));
+  
+  document.getElementById('winnerPanel').innerHTML = `
+    <div class="kicker-inv">El gran favorito</div>
+    <div class="winner-name">${top.team_es}</div>
+    <div class="winner-prob">${(top.p_champ*100).toFixed(1)}<span>%</span></div>
+    <div class="winner-ci">Intervalo 95%: ${((top.p_champ_lo||0)*100).toFixed(1)}% – ${((top.p_champ_hi||0)*100).toFixed(1)}%</div>
+    <div class="winner-meta">
+      Grupo ${top.group}<br>
+      Pasa: ${(top.p_advance*100).toFixed(0)}%<br>
+      Llega a semis: ${(top.p_sf*100).toFixed(0)}%<br>
+      Llega a final: ${(top.p_final*100).toFixed(0)}%<br>
+      <br>
+      <strong style="color: var(--accent)">Penales: 75%</strong> (4ª selección con mejor histórico)
+    </div>`;
+  
+  document.getElementById('leaderList').innerHTML = sorted.map((t,i) => `
+    <div class="leader-row ${i===0?'top1':''}">
+      <div class="rank ${i<3?'top':''}">${String(i+1).padStart(2,'0')}</div>
+      <div>
+        <div class="team-name">${t.team_es}</div>
+        <div class="team-group">Grupo ${t.group} · Pasa ${(t.p_advance*100).toFixed(0)}% · SF ${(t.p_sf*100).toFixed(0)}%</div>
+      </div>
+      <div>${ciStrip(t.p_champ, t.p_champ_lo || t.p_champ*0.5, t.p_champ_hi || t.p_champ*1.5, maxHi)}</div>
+    </div>`).join('');
+}
+
+function renderGroups() {
+  const gm = {};
+  teams.forEach(t => { if(!gm[t.group]) gm[t.group]=[]; gm[t.group].push(t); });
+  document.getElementById('groupGrid').innerHTML = Object.keys(gm).sort().map(g => {
+    const sub = gm[g].sort((a,b) => b.avg_points - a.avg_points);
+    return `<div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">${g}</div>
+        <div class="group-tag">Tabla esperada<br>30k simulaciones</div>
+      </div>
+      <table class="group-table">
+        <thead><tr>
+          <th>Equipo</th><th>Pts</th><th>DG</th><th>GF</th><th>1º</th><th>Pasa</th>
+        </tr></thead>
+        <tbody>
+        ${sub.map((t,i) => `<tr>
+          <td class="gt-name">${t.team_es}</td>
+          <td class="gt-pts ${i===0?'top':''}">${(t.avg_points||0).toFixed(2)}</td>
+          <td class="gt-stat">${(t.avg_gd||0)>0?'+':''}${(t.avg_gd||0).toFixed(1)}</td>
+          <td class="gt-stat">${(t.avg_gf||0).toFixed(1)}</td>
+          <td class="gt-prob ${t.p_1st>0.5?'high':''}">${(t.p_1st*100).toFixed(0)}%</td>
+          <td class="gt-prob ${t.p_advance>0.85?'high':''}">${(t.p_advance*100).toFixed(0)}%</td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderMatches() {
+  const fl = document.getElementById('filterTeam');
+  const fg = document.getElementById('filterGroup');
+
+  // Populate team filter
+  if (fl.options.length <= 1) {
+    [...new Set(teams.map(t=>t.team_es))].sort().forEach(t => {
+      fl.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`);
+    });
+  }
+
+  // Populate group filter
+  if (fg.options.length <= 1) {
+    [...new Set(teams.map(t=>t.group))].sort().forEach(g => {
+      fg.insertAdjacentHTML('beforeend', `<option value="${g}">Grupo ${g}</option>`);
+    });
+  }
+
+  const ft = fl.value;
+  const selectedGroup = fg.value;
+
+  // Build set of teams in selected group
+  const groupTeams = selectedGroup
+    ? new Set(teams.filter(t => t.group === selectedGroup).map(t => t.team_es))
+    : null;
+
+  let filtered = matches.filter(m => {
+    const teamMatch = !ft || m.home_es === ft || m.away_es === ft;
+    const groupMatch = !groupTeams || (groupTeams.has(m.home_es) && groupTeams.has(m.away_es));
+    return teamMatch && groupMatch;
+  });
+
+  filtered.sort((a,b) => a.date.localeCompare(b.date));
+  
+  document.getElementById('matchesContainer').innerHTML = filtered.map(m => {
+    const probs = [m.prob_1, m.prob_2, m.prob_3, m.prob_4, m.prob_5];
+    const scores = [m.score_1, m.score_2, m.score_3, m.score_4, m.score_5];
+    const maxP = Math.max(...probs);
+    const cov = probs.reduce((a,b)=>a+b, 0);
+    return `<div class="match-card">
+      <div><div class="match-date">${m.date.substring(5)}</div></div>
+      <div>
+        <div class="match-teams">${m.home_es} <span style="color:var(--muted); font-size:14px"> vs </span> ${m.away_es}</div>
+        <div class="match-meta">${m.city} · λ ${m.lambda_h.toFixed(2)}–${m.lambda_a.toFixed(2)} · Top-5 ${(cov*100).toFixed(0)}%</div>
+      </div>
+      <div class="match-scores">
+        ${scores.map((s,i) => `<div class="score-cell ${probs[i]===maxP?'top':''}">
+          <div class="score">${s}</div>
+          <div class="score-prob">${(probs[i]*100).toFixed(0)}%</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderBracket() {
+  const sorted = [...teams].sort((a,b) => b.p_champ - a.p_champ);
+  const rounds = [
+    {key:'p_advance', label:'PASA'},
+    {key:'p_r16', label:'OCTAVOS'},
+    {key:'p_qf', label:'CUARTOS'},
+    {key:'p_sf', label:'SEMIS'},
+    {key:'p_final', label:'FINAL'},
+    {key:'p_champ', label:'CAMPEÓN'}
+  ];
+  document.getElementById('bracketChart').innerHTML = `
+    <div style="display: grid; grid-template-columns: 180px repeat(6, 1fr); gap: 1px; background: var(--rule); padding: 1px; font-family: 'JetBrains Mono', monospace; min-width: 900px;">
+      <div style="background: var(--ink); color: var(--paper); padding: 14px 12px; font-size: 10px; letter-spacing: 0.15em;">Equipo</div>
+      ${rounds.map(r => `<div style="background: var(--ink); color: var(--paper); padding: 14px 12px; font-size: 10px; letter-spacing: 0.15em; text-align: center;">${r.label}</div>`).join('')}
+      ${sorted.map(t => `
+        <div style="background: var(--paper); padding: 10px 12px; font-family: 'Fraunces', serif; font-size: 14px; font-weight: 500;">${t.team_es}</div>
+        ${rounds.map(r => {
+          const v = t[r.key];
+          const op = Math.max(0.05, Math.pow(v, 0.5));
+          const isChamp = r.key === 'p_champ';
+          return `<div style="background: var(--paper); padding: 8px 10px; position: relative;">
+            <div style="position: absolute; inset: 0; background: ${isChamp ? 'var(--accent)' : 'var(--ink)'}; opacity: ${op};"></div>
+            <span style="position: relative; color: ${op > 0.5 ? 'var(--paper)' : 'var(--ink)'}; font-size: 11px; font-variant-numeric: tabular-nums; font-weight: ${isChamp?'700':'500'};">${v < 0.001 ? '·' : (v*100).toFixed(v<0.01?2:1)+'%'}</span>
+          </div>`;
+        }).join('')}
+      `).join('')}
+    </div>`;
+}
+
+function showSection(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'matches') renderMatches();
+  if (name === 'bracket') renderBracket();
+}
+
+renderLeaderboard();
+renderGroups();
+renderMatches();
+renderBracket();
+
+// === live-update patch ===
+(function(){
+  function applyPlayed(){
+    if (typeof matches === 'undefined') return;
+    const playedMap = {};
+    matches.forEach(m => { if(m.played) playedMap[m.home_es+'|'+m.away_es] = m; });
+    document.querySelectorAll('tr, .match-row, .match-card').forEach(r => {
+      const txt = r.textContent || '';
+      Object.keys(playedMap).forEach(k => {
+        const [h,a] = k.split('|');
+        if (txt.includes(h) && txt.includes(a)) {
+          const m = playedMap[k];
+          r.style.background = 'rgba(74,107,62,0.10)';
+          r.style.borderLeft = '3px solid #4a6b3e';
+          // Inyectar marcador real si encontramos celdas de lambda
+          const cells = r.querySelectorAll('td');
+          cells.forEach(c => {
+            if (c.textContent.match(/^\d+\.\d+$/)) {
+              // Reemplazar primera lambda por marcador
+              if (!r.dataset.scored) {
+                c.innerHTML = `<strong style="color:#4a6b3e">${m.score_h}–${m.score_a}</strong>`;
+                r.dataset.scored = '1';
+              }
+            }
+          });
+        }
+      });
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(applyPlayed, 100));
+  } else {
+    setTimeout(applyPlayed, 100);
+  }
+  // Re-aplicar tras cualquier render dinámico
+  const obs = new MutationObserver(() => setTimeout(applyPlayed, 50));
+  obs.observe(document.body, {childList: true, subtree: true});
+})();
+
+</script>
+</body>
+</html>
