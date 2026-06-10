@@ -237,6 +237,21 @@ def reset_cmd(args):
 def rebuild(args):
     subprocess.run([sys.executable, str(WORKDIR/"build_dashboard.py")], check=True)
 
+def resimulate(args):
+    """Re-corre el Monte Carlo completo con los alpha/beta actuales
+    (base + ajustes acumulados + anclaje Elo) y reescribe las P(campeon)/fases."""
+    print(f"Re-anclando a Elo (w={args.elo_w})...")
+    subprocess.run([sys.executable, str(WORKDIR/"elo_anchor.py"), "--w", str(args.elo_w)],
+                   check=True)
+    print(f"Re-simulando torneo ({args.sims} sims, k={args.k}, shrink={args.shrink})...")
+    subprocess.run([sys.executable, str(WORKDIR/"monte_carlo.py"),
+                    "--sims", str(args.sims), "--k", str(args.k),
+                    "--shrink", str(args.shrink), "--out", str(WORKDIR/"mc_final.csv")],
+                   check=True)
+    print("Aplicando al dashboard...")
+    subprocess.run([sys.executable, str(WORKDIR/"apply_simulation.py")], check=True)
+    print("Listo. Recuerda: git add forescore_mundial_dashboard.html && git commit && git push")
+
 def main():
     p = argparse.ArgumentParser(description="Forescore v3.0 - live update")
     sub = p.add_subparsers(dest="command")
@@ -260,12 +275,18 @@ def main():
     sub.add_parser("status")
     sub.add_parser("reset")
     sub.add_parser("rebuild-dashboard")
+    prs = sub.add_parser("resimulate", help="Re-correr Monte Carlo y actualizar P(campeon)")
+    prs.add_argument("--sims", type=int, default=50000)
+    prs.add_argument("--k", type=float, default=18.0)
+    prs.add_argument("--shrink", type=float, default=0.15)
+    prs.add_argument("--elo-w", type=float, default=0.25)
     args = p.parse_args()
     if args.command == "predict": predict(args)
     elif args.command == "update": update(args)
     elif args.command == "status": status(args)
     elif args.command == "reset": reset_cmd(args)
     elif args.command == "rebuild-dashboard": rebuild(args)
+    elif args.command == "resimulate": resimulate(args)
     else: p.print_help()
 
 if __name__ == "__main__":

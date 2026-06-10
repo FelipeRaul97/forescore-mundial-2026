@@ -1,114 +1,98 @@
-# Forescore Mundial 2026 · v3.0
+# Forescore Mundial 2026 · v3.1
 
-Modelo predictivo del Mundial 2026 basado en **Dixon-Coles** + Monte Carlo (50.000 simulaciones), con tres mejoras sobre el modelo base:
+Modelo predictivo del Mundial 2026: **Dixon-Coles + Monte Carlo (50.000 sims)** con bracket oficial del torneo y capas de calibración.
 
-1. **Penales por equipo** (datos históricos de Mundiales/Euros/Copas continentales 1976-2024)
-2. **Tendencia al empate por equipo** (calibrada sobre 2.500+ partidos)
-3. **Threshold óptimo 1X2** (P(empate)≥0.38 ∧ |P(H)−P(A)|≤0.26)
+🔗 **Dashboard:** `https://TU-USUARIO.github.io/forescore-mundial-2026/forescore_mundial_dashboard.html`
 
-🔗 **Dashboard en vivo:** _(actívalo siguiendo los pasos de GitHub Pages)_
+## Qué hace
 
-## Quick start
+- Probabilidades de pasar grupos, R32, R16, cuartos, semis, final y campeón para las 48 selecciones.
+- Predicción partido a partido (λ, 1X2, top-5 marcadores) con ajustes contextuales.
+- Bayesian update post-partido y re-simulación del torneo completo.
 
-```bash
-git clone https://github.com/TU-USUARIO/forescore-mundial-2026.git
-cd forescore-mundial-2026
-pip install -r requirements.txt
-open forescore_mundial_dashboard.html
-```
+## El modelo (v3.1)
+
+Sobre la base Dixon-Coles (ρ = −0.092) se aplican:
+
+1. **Bracket oficial Mundial 2026** — los 16 cruces R32 (matches 73-88) con clusters de terceros y el árbol completo hasta la final. Fue el cambio más importante: el Monte Carlo original sobreestimaba a los favoritos (Argentina 22%) por no usar el bracket real; con él baja a ~13%, más realista.
+2. **Penales por equipo** — probabilidad histórica de tanda (Alemania 79%, Argentina 75%, España 36%...).
+3. **Tendencia al empate por equipo** — corrección empírica (Suiza +21%, Argentina −13%...).
+4. **Varianza inflada** (Gamma-Poisson, k=18) — ensancha la incertidumbre para no sobreconcentrar en favoritos.
+5. **Shrinkage por confederación** (λ=0.15) — regulariza equipos con datos ruidosos (Curazao, Jordania).
+6. **Anclaje Elo** (w=0.25) — mezcla la fuerza del modelo con el Elo de selecciones (snapshot pre-Mundial 27-may-2026), corrigiendo la compresión de los favoritos.
 
 ## Comandos
 
 ### Predicción pre-partido
-
 ```bash
-python live_update.py predict \
-    --home Argentina --away Argelia \
-    --absences-away "Mahrez,Bensebaini" \
-    --backup-gk-away
+python live_update.py predict --home España --away "Arabia Saudi" --absences-home "Pedri"
 ```
 
-Acepta nombres en español o inglés. Aplica los tres ajustes del modelo v3 automáticamente.
-
-| Flag | Efecto |
-|---|---|
-| `--absences-home "J1,J2"` / `--absences-away` | −10% λ ofensiva por jugador (cap 50%) |
-| `--backup-gk-home` / `--backup-gk-away` | +8% λ del rival |
-| `--rotation-home` / `--rotation-away` | −5% λ propia |
-| `--weather-extreme` | −5% λ ambos |
-| `--home-country` | aplica γ (solo MEX/USA/CAN en sus sedes) |
-| `--knockout` | muestra prob. de tanda de penales |
-
-### Update post-partido (regenera dashboard automáticamente)
-
+### Update post-partido (regenera dashboard de marcadores)
 ```bash
-python live_update.py update --home Argentina --away Argelia --score 3-1
+python live_update.py update --home España --away "Arabia Saudi" --score 3-0
 ```
 
-Aplica Bayesian update (peso 0.30) sobre α/β y regenera `forescore_mundial_dashboard.html`:
-- Partidos jugados → marcados en verde con resultado real
-- Partidos pendientes → λ recalculadas con ajustes acumulados
-- Banner superior con resumen del estado live
+### Re-simular torneo (actualiza P(campeón) con lo aprendido)
+```bash
+python live_update.py resimulate
+```
+Re-ancla a Elo, re-corre 50.000 simulaciones con los α/β actuales (base + ajustes de los `update`) y reescribe las probabilidades de campeón/fases. **Esto es lo que hace que las probabilidades de campeón cambien durante el torneo.**
 
 ### Otros
-
 ```bash
-python live_update.py status              # ver ajustes acumulados
+python live_update.py status              # ajustes acumulados
 python live_update.py reset               # volver al modelo base
-python live_update.py rebuild-dashboard   # regenerar HTML sin update
+python live_update.py rebuild-dashboard   # regenerar HTML de marcadores
 ```
 
-## Estructura del repo
+## Flujo durante el torneo
 
 ```
-├── live_update.py              # CLI principal
-├── build_dashboard.py          # Regeneración del HTML
-├── extract_and_fit.py          # Inicialización (ya ejecutado, no hace falta correr)
-├── dashboard_template.html     # Plantilla base (v3 frozen)
-├── forescore_mundial_dashboard.html  # Dashboard auto-actualizable
-├── dixon_coles_params.csv      # α, β por equipo
-├── dixon_coles_global.csv      # γ, ρ
-├── penalty_probs.csv           # P(ganar tanda) por equipo
-├── draw_tendency.csv           # Desviación empírica del empate por equipo
-├── optimized_params.csv        # threshold_pd, threshold_diff, draw_strength
-├── teams_base.json             # Probabilidades pre-Mundial Monte Carlo
-├── matches_base.json           # 72 partidos de grupos con λ
-└── requirements.txt
+Tras cada partido:
+    python live_update.py update --home X --away Y --score 2-1
+    git add forescore_mundial_dashboard.html live_state.json
+    git commit -m "X 2-1 Y" && git push
+
+Al final de cada fase (grupos, R32, R16...):
+    python live_update.py resimulate
+    git add forescore_mundial_dashboard.html && git commit -m "Re-sim tras grupos" && git push
 ```
 
-`live_state.json` se crea en cada update local y está en `.gitignore`.
+## Estructura
 
-## Modelo
+```
+├── live_update.py            # CLI principal
+├── monte_carlo.py            # Motor de simulación (bracket oficial)
+├── bracket_2026.py           # Estructura oficial del bracket
+├── elo_anchor.py             # Anclaje de α/β hacia Elo
+├── apply_simulation.py       # Inyecta resultados MC en el dashboard
+├── build_dashboard.py        # Regenera HTML de marcadores
+├── dashboard_template.html   # Plantilla base
+├── forescore_mundial_dashboard.html  # Dashboard final (el que se publica)
+├── dixon_coles_params.csv    # α, β base
+├── dixon_coles_params_elo.csv# α, β anclados a Elo (generado)
+├── elo_base.csv              # Elo pre-Mundial de los 48
+├── mc_final.csv              # Última simulación
+├── penalty_probs.csv / draw_tendency.csv / optimized_params.csv
+└── teams_base.json / matches_base.json
+```
 
-- **Dixon-Coles**: Poisson bivariado con corrección ρ = −0.092 para marcadores bajos
-- **α** (ataque), **β** (vulnerabilidad defensiva) por equipo
-- **γ** (ventaja de local) muy baja (0.04): casi todos los partidos en sede neutral; solo aplica con `--home-country`
-- **Penales eliminatorias**: probabilidad histórica por equipo (Alemania 79%, Argentina 75%, España 36%...). Resto: prior 50%.
-- **Ajuste empate**: corrección empírica por equipo (Suiza +20.9%, Argentina −12.6%...)
-- **Threshold 1X2**: predice empate si P(empate)≥0.38 ∧ |P(H)−P(A)|≤0.26
-- **Bayesian update post-partido**: peso 0.30 sobre log(λ_real) vs log(λ_predicha)
+`live_state.json` se crea localmente al primer update (en `.gitignore`).
 
-## Publicar con GitHub Pages
+## Parámetros calibrables
 
-1. Sube el repo a GitHub (público).
-2. **Settings → Pages → Source**: `Deploy from a branch` → `main` / `(root)` → Save.
-3. En ~1 min disponible en:
-   `https://TU-USUARIO.github.io/forescore-mundial-2026/forescore_mundial_dashboard.html`
-4. Tras cada update local:
-   ```bash
-   git add forescore_mundial_dashboard.html
-   git commit -m "Tras X-Y"
-   git push
-   ```
+- `--k` (varianza): bajo = más sorpresas, alto = más determinista. Default 18.
+- `--shrink` (regularización confederación): 0 a 1. Default 0.15.
+- `--elo-w` (peso Elo): 0 a 1. Default 0.25. Por encima de 0.40 el modelo se vuelve un repetidor del Elo.
 
-## Limitaciones
+## Limitaciones (honestas)
 
-- No modela cambios de seleccionador
-- No modela lesiones intra-partido
-- No incluye árbitros, VAR ni xG histórico
-- `penalty_probs.csv` solo tiene los 9 equipos del reporte; el resto usa prior 50%. Si quieres añadir más, edita el CSV.
-- `draw_tendency.csv` solo tiene los 5 equipos del reporte; el resto neutro.
+- Los α/β se recuperaron de las λ del dashboard original por mínimos cuadrados, no de datos crudos. El anclaje Elo corrige parte de la compresión resultante.
+- El modelo no usa xG (entrena con goles), no modela cambios de seleccionador, lesiones intra-partido, árbitros ni VAR.
+- El bracket de terceros usa una asignación válida de los clusters FIFA, no las 495 combinaciones exactas (efecto despreciable en agregado).
+- **No está validado contra un torneo real con esta configuración.** Corrige sesgos conocidos pero es "el mejor esfuerzo con los datos disponibles", no un modelo demostrablemente óptimo.
 
 ---
 
-Forescore Mundial 2026 · v3.0 · Anthropic Claude
+Forescore Mundial 2026 · v3.1 · Motor Monte Carlo con bracket oficial + Elo

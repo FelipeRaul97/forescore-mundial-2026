@@ -151,13 +151,14 @@
   <button class="tab" onclick="showSection('changes', this)">Cómo funciona</button>
   <button class="tab" onclick="showSection('groups', this)">Grupos</button>
   <button class="tab" onclick="showSection('matches', this)">Marcadores</button>
+  <button class="tab" onclick="showSection('knockout', this)">Eliminatorias</button>
   <button class="tab" onclick="showSection('bracket', this)">Camino al título</button>
 </nav>
 
 <section id="overview" class="section active">
-  <div class="kicker">v3.0 final · Predicción pre-Mundial</div>
-  <h2 class="section-title">Argentina al frente, con sombra de incertidumbre</h2>
-  <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
+  <div class="kicker" id="overviewKicker">v3.0 final · Predicción pre-Mundial</div>
+  <h2 class="section-title" id="overviewTitle">Argentina al frente, con sombra de incertidumbre</h2>
+  <p id="overviewLede" style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
     Modelo final con penales calibrados por equipo, tendencia al empate por selección y threshold óptimo de predicción 1X2. Los intervalos 95% reflejan la incertidumbre real del fútbol eliminatorio.
   </p>
   <div class="leader-grid">
@@ -251,6 +252,15 @@
   <div id="matchesContainer"></div>
 </section>
 
+<section id="knockout" class="section">
+  <div class="kicker" id="knockoutKicker">Fase eliminatoria · Proyección</div>
+  <h2 class="section-title">El camino hacia la final</h2>
+  <p id="knockoutLede" style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--muted); max-width: 800px; margin-bottom: 36px; font-style: italic;">
+    Antes de que terminen los grupos, cada cruce muestra el equipo más probable por posición (proyección del modelo). A medida que se jueguen los partidos, los cruces se irán llenando con los clasificados reales.
+  </p>
+  <div id="knockoutBracket" style="overflow-x: auto;"></div>
+</section>
+
 <section id="bracket" class="section">
   <div class="kicker">Camino al título</div>
   <h2 class="section-title">Probabilidades por ronda</h2>
@@ -293,8 +303,33 @@ function ciStrip(mean, lo, hi, maxScale) {
 function renderLeaderboard() {
   const sorted = [...teams].sort((a,b) => b.p_champ - a.p_champ);
   const top = sorted[0];
+  const second = sorted[1];
   const maxHi = Math.max(...sorted.map(t => t.p_champ_hi || t.p_champ*2));
-  
+
+  // --- Titular dinámico según el líder actual ---
+  const margin = (top.p_champ - second.p_champ) * 100;
+  let titleText, ledeText;
+  if (margin > 6) {
+    titleText = `${top.team_es}, favorito destacado`;
+    ledeText = `${top.team_es} encabeza las proyecciones con claridad (${(top.p_champ*100).toFixed(1)}%), por delante de ${second.team_es}. Los intervalos reflejan la incertidumbre real del fútbol eliminatorio.`;
+  } else if (margin > 2) {
+    titleText = `${top.team_es} al frente, con sombra de incertidumbre`;
+    ledeText = `${top.team_es} lidera (${(top.p_champ*100).toFixed(1)}%) pero ${second.team_es} sigue de cerca. El torneo está lejos de decidido.`;
+  } else {
+    titleText = `${top.team_es} y ${second.team_es}, mano a mano`;
+    ledeText = `Las proyecciones apenas separan a ${top.team_es} (${(top.p_champ*100).toFixed(1)}%) de ${second.team_es} (${(second.p_champ*100).toFixed(1)}%). Cualquiera de los dos es un candidato legítimo.`;
+  }
+  const tEl = document.getElementById('overviewTitle');
+  const lEl = document.getElementById('overviewLede');
+  if (tEl) tEl.textContent = titleText;
+  if (lEl) lEl.textContent = ledeText;
+
+  // Penales del líder (si el dato existe en el equipo)
+  const penPct = (typeof top.pen_pct === 'number') ? `${Math.round(top.pen_pct*100)}%` : null;
+  const penLine = penPct
+    ? `<br><br><strong style="color: var(--accent)">Penales: ${penPct}</strong>`
+    : '';
+
   document.getElementById('winnerPanel').innerHTML = `
     <div class="kicker-inv">El gran favorito</div>
     <div class="winner-name">${top.team_es}</div>
@@ -304,11 +339,9 @@ function renderLeaderboard() {
       Grupo ${top.group}<br>
       Pasa: ${(top.p_advance*100).toFixed(0)}%<br>
       Llega a semis: ${(top.p_sf*100).toFixed(0)}%<br>
-      Llega a final: ${(top.p_final*100).toFixed(0)}%<br>
-      <br>
-      <strong style="color: var(--accent)">Penales: 75%</strong> (4ª selección con mejor histórico)
+      Llega a final: ${(top.p_final*100).toFixed(0)}%${penLine}
     </div>`;
-  
+
   document.getElementById('leaderList').innerHTML = sorted.map((t,i) => `
     <div class="leader-row ${i===0?'top1':''}">
       <div class="rank ${i<3?'top':''}">${String(i+1).padStart(2,'0')}</div>
@@ -440,12 +473,63 @@ function showSection(name, btn) {
   btn.classList.add('active');
   if (name === 'matches') renderMatches();
   if (name === 'bracket') renderBracket();
+  if (name === 'knockout') renderKnockout();
+}
+
+// ---- Bracket eliminatorio (proyección por slots oficiales) ----
+const KO_R32 = {
+  73:["R:A","R:B"], 74:["W:E","T:ABCDF"], 75:["W:F","R:C"], 76:["W:C","R:F"],
+  77:["W:I","T:CDFGH"], 78:["R:E","R:I"], 79:["W:A","T:CEFHI"], 80:["W:L","T:EHIJK"],
+  81:["W:D","T:BEFIJ"], 82:["W:G","T:AEHIJ"], 83:["R:K","R:L"], 84:["W:H","R:J"],
+  85:["W:B","T:EFGIJ"], 86:["W:J","R:H"], 87:["W:K","T:DEIJL"], 88:["R:D","R:G"]
+};
+
+function projectedTeamForSlot(slot) {
+  // Devuelve el equipo más probable para un slot dado (W:grupo, R:grupo, T:cluster)
+  const [typ, grp] = slot.split(":");
+  if (typ === "W") {
+    const cand = teams.filter(t => t.group === grp);
+    cand.sort((a,b) => b.p_1st - a.p_1st);
+    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_1st} : {name:"?", p:0};
+  }
+  if (typ === "R") {
+    const cand = teams.filter(t => t.group === grp);
+    cand.sort((a,b) => b.p_2nd - a.p_2nd);
+    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_2nd} : {name:"?", p:0};
+  }
+  // T: mejor tercero entre los grupos del cluster
+  const cand = teams.filter(t => grp.includes(t.group));
+  cand.sort((a,b) => b.p_3rd - a.p_3rd);
+  return cand[0] ? {name: cand[0].team_es+" (3º)", p: cand[0].p_3rd} : {name:"?", p:0};
+}
+
+function renderKnockout() {
+  const matchOrder = Object.keys(KO_R32).map(Number).sort((a,b)=>a-b);
+  const cards = matchOrder.map(m => {
+    const a = projectedTeamForSlot(KO_R32[m][0]);
+    const b = projectedTeamForSlot(KO_R32[m][1]);
+    return `<div style="background: var(--paper); border: 1px solid var(--rule); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted);">MATCH ${m} · R32</div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500;">${a.name}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${(a.p*100).toFixed(0)}%</span>
+      </div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-align: center;">vs</div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500;">${b.name}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${(b.p*100).toFixed(0)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('knockoutBracket').innerHTML =
+    `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">${cards}</div>`;
 }
 
 renderLeaderboard();
 renderGroups();
 renderMatches();
 renderBracket();
+renderKnockout();
 </script>
 </body>
 </html>
