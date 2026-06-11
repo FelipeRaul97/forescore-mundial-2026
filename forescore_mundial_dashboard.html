@@ -424,18 +424,27 @@ function renderMatches() {
     const scores = [m.score_1, m.score_2, m.score_3, m.score_4, m.score_5];
     const maxP = Math.max(...probs);
     const cov = probs.reduce((a,b)=>a+b, 0);
-    return `<div class="match-card">
+    const lambdaH = m.played ? (m.lambda_h_pred || m.lambda_h) : m.lambda_h;
+    const lambdaA = m.played ? (m.lambda_a_pred || m.lambda_a) : m.lambda_a;
+    const scoresSection = m.played
+      ? `<div style="display:flex;align-items:center;gap:16px;">
+           <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#4a6b3e;letter-spacing:0.05em;">${m.score_h}–${m.score_a}</div>
+           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#4a6b3e;text-transform:uppercase;letter-spacing:0.15em;">Resultado<br>final</div>
+         </div>`
+      : `<div class="match-scores">
+           ${scores.map((s,i) => `<div class="score-cell ${probs[i]===maxP?'top':''}">
+             <div class="score">${s}</div>
+             <div class="score-prob">${(probs[i]*100).toFixed(0)}%</div>
+           </div>`).join('')}
+         </div>`;
+    const cardStyle = m.played ? ' style="background:rgba(74,107,62,0.08);border-left:3px solid #4a6b3e;"' : '';
+    return `<div class="match-card"${cardStyle}>
       <div><div class="match-date">${m.date.substring(5)}</div></div>
       <div>
         <div class="match-teams">${m.home_es} <span style="color:var(--muted); font-size:14px"> vs </span> ${m.away_es}</div>
-        <div class="match-meta">${m.city} · λ ${m.lambda_h.toFixed(2)}–${m.lambda_a.toFixed(2)} · Top-5 ${(cov*100).toFixed(0)}%</div>
+        <div class="match-meta">${m.city} · λ ${lambdaH.toFixed(2)}–${lambdaA.toFixed(2)} · Top-5 ${(cov*100).toFixed(0)}%</div>
       </div>
-      <div class="match-scores">
-        ${scores.map((s,i) => `<div class="score-cell ${probs[i]===maxP?'top':''}">
-          <div class="score">${s}</div>
-          <div class="score-prob">${(probs[i]*100).toFixed(0)}%</div>
-        </div>`).join('')}
-      </div>
+      ${scoresSection}
     </div>`;
   }).join('');
 }
