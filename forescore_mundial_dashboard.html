@@ -426,17 +426,35 @@ function renderMatches() {
     const cov = probs.reduce((a,b)=>a+b, 0);
     const lambdaH = m.played ? (m.lambda_h_pred || m.lambda_h) : m.lambda_h;
     const lambdaA = m.played ? (m.lambda_a_pred || m.lambda_a) : m.lambda_a;
-    const scoresSection = m.played
-      ? `<div style="display:flex;align-items:center;gap:16px;">
-           <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#4a6b3e;letter-spacing:0.05em;">${m.score_h}–${m.score_a}</div>
-           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#4a6b3e;text-transform:uppercase;letter-spacing:0.15em;">Resultado<br>final</div>
-         </div>`
-      : `<div class="match-scores">
-           ${scores.map((s,i) => `<div class="score-cell ${probs[i]===maxP?'top':''}">
-             <div class="score">${s}</div>
-             <div class="score-prob">${(probs[i]*100).toFixed(0)}%</div>
-           </div>`).join('')}
-         </div>`;
+    let extraChip = '';
+    if (m.played) {
+      const actualScore = `${m.score_h}-${m.score_a}`;
+      const inTop5 = scores.includes(actualScore);
+      if (!inTop5) {
+        // Calcular probabilidad del resultado real con Dixon-Coles approx (Poisson simple)
+        const lh = lambdaH, la = lambdaA;
+        const sh = m.score_h, sa = m.score_a;
+        const pois = (l, k) => Math.exp(-l) * Math.pow(l, k) / [1,1,2,6,24,120][Math.min(k,5)];
+        const prob = pois(lh, sh) * pois(la, sa);
+        extraChip = `<div class="score-cell" style="border:2px solid #4a6b3e;background:rgba(74,107,62,0.12);order:-1;">
+          <div class="score" style="color:#4a6b3e;">${actualScore}</div>
+          <div class="score-prob" style="color:#4a6b3e;">${(prob*100).toFixed(0)}%</div>
+        </div>`;
+      }
+    }
+    const scoresSection = `<div class="match-scores" style="${m.played?'flex-wrap:wrap;':''}">
+      ${extraChip}
+      ${scores.map((s,i) => {
+        const isActual = m.played && s === `${m.score_h}-${m.score_a}`;
+        const isTop = probs[i] === maxP && !m.played;
+        const style = isActual ? 'border:2px solid #4a6b3e;background:rgba(74,107,62,0.12);' : '';
+        const textStyle = isActual ? 'color:#4a6b3e;' : '';
+        return `<div class="score-cell ${isTop?'top':''}" style="${style}">
+          <div class="score" style="${textStyle}">${s}</div>
+          <div class="score-prob" style="${textStyle}">${(probs[i]*100).toFixed(0)}%</div>
+        </div>`;
+      }).join('')}
+    </div>`;
     const cardStyle = m.played ? ' style="background:rgba(74,107,62,0.08);border-left:3px solid #4a6b3e;"' : '';
     return `<div class="match-card"${cardStyle}>
       <div><div class="match-date">${m.date.substring(5)}</div></div>
