@@ -37,8 +37,10 @@ def load_params():
     pf = WORKDIR/"dixon_coles_params_elo.csv"
     if not pf.exists():
         pf = WORKDIR/"dixon_coles_params.csv"
-    dc = pd.read_csv(pf)
-    glob = pd.read_csv(WORKDIR/"dixon_coles_global.csv")
+    dc = pd.read_csv(pf, encoding="utf-8")
+    glob = pd.read_csv(WORKDIR/"dixon_coles_global.csv", encoding="utf-8")
+    # Normalizar nombres (evita corrupcion de caracteres especiales en Windows)
+    dc["team"] = dc["team"].str.encode("utf-8", errors="replace").str.decode("utf-8")
     alpha = dict(zip(dc["team"], dc["alpha"]))
     beta = dict(zip(dc["team"], dc["beta"]))
     rho = float(glob["rho"].iloc[0])
@@ -73,7 +75,7 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
         groups.setdefault(t["group"], []).append(t["team"])
     all_teams = [t["team"] for t in teams_meta]
     rng = np.random.default_rng(seed)
-    pp = pd.read_csv(WORKDIR/"penalty_probs.csv")
+    pp = pd.read_csv(WORKDIR/"penalty_probs.csv", encoding="utf-8")
     ppd = dict(zip(pp["team"], pp["p_win_smoothed"]))
 
     cnt = {t: {"adv":0,"r16":0,"qf":0,"sf":0,"final":0,"champ":0,"1st":0,"2nd":0,"3rd":0}

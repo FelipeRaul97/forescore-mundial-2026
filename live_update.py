@@ -12,10 +12,10 @@ WORKDIR = Path(__file__).parent
 STATE_FILE = WORKDIR / "live_state.json"
 
 def load_base():
-    dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv")
-    glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv")
-    opt = pd.read_csv(WORKDIR / "optimized_params.csv") if (WORKDIR/"optimized_params.csv").exists() else None
-    pp = pd.read_csv(WORKDIR / "penalty_probs.csv")
+    dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv", encoding="utf-8")
+    glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv", encoding="utf-8")
+    opt = pd.read_csv(WORKDIR / "optimized_params.csv", encoding="utf-8") if (WORKDIR/"optimized_params.csv").exists() else None
+    pp = pd.read_csv(WORKDIR / "penalty_probs.csv", encoding="utf-8")
     with open(WORKDIR / "teams_base.json") as f: teams_meta = json.load(f)
     es_by_en = {t["team"]: t["team_es"] for t in teams_meta}
     en_by_es = {t["team_es"]: t["team"] for t in teams_meta}
@@ -125,7 +125,7 @@ def predict(args):
     # Ajuste de empate por equipo (v3)
     dt_path = WORKDIR / "draw_tendency.csv"
     if dt_path.exists():
-        dt = pd.read_csv(dt_path)
+        dt = pd.read_csv(dt_path, encoding="utf-8")
         SHRINK = 12
         dt["adj"] = dt["diff"] * (dt["n"]/(dt["n"]+SHRINK))
         da = dict(zip(dt["team"], dt["adj"]))

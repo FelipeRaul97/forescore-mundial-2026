@@ -13,9 +13,9 @@ WORKDIR = Path(__file__).parent
 SRC = WORKDIR / "dashboard_template.html"
 OUT = WORKDIR / "forescore_mundial_dashboard.html"
 
-mc = pd.read_csv(WORKDIR / "mc_final.csv").set_index("team")
-pp = pd.read_csv(WORKDIR / "penalty_probs.csv").set_index("team")["p_win_smoothed"].to_dict()
-html = SRC.read_text()
+mc = pd.read_csv(WORKDIR / "mc_final.csv", encoding="utf-8").set_index("team")
+pp = pd.read_csv(WORKDIR / "penalty_probs.csv", encoding="utf-8").set_index("team")["p_win_smoothed"].to_dict()
+html = SRC.read_text(encoding="utf-8")
 m = re.search(r"const teams = (\[.*?\]);", html, re.DOTALL)
 teams = json.loads(m.group(1))
 
@@ -46,7 +46,7 @@ html_out = html_out.replace(
     "50.000 SIMS · BRACKET OFICIAL · VARIANZA + SHRINKAGE"
 )
 
-OUT.write_text(html_out)
+OUT.write_text(html_out, encoding="utf-8")
 print(f"Dashboard actualizado con simulación nueva: {OUT.name}")
 top = sorted(teams, key=lambda x:-x["p_champ"])[:5]
 for t in top:

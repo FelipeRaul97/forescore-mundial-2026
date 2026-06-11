@@ -23,8 +23,8 @@ from pathlib import Path
 WORKDIR = Path(__file__).parent
 
 def build(w=0.25, verbose=True):
-    dc = pd.read_csv(WORKDIR/"dixon_coles_params.csv")
-    elo = pd.read_csv(WORKDIR/"elo_base.csv")
+    dc = pd.read_csv(WORKDIR/"dixon_coles_params.csv", encoding="utf-8")
+    elo = pd.read_csv(WORKDIR/"elo_base.csv", encoding="utf-8")
     m = dc.merge(elo[["team","rating"]], on="team", how="left")
     if m["rating"].isna().any():
         missing = m[m["rating"].isna()]["team"].tolist()
@@ -52,7 +52,7 @@ def build(w=0.25, verbose=True):
 
     out = m[["team","alpha_new","beta_new"]].rename(
         columns={"alpha_new":"alpha","beta_new":"beta"})
-    out.to_csv(WORKDIR/"dixon_coles_params_elo.csv", index=False)
+    out.to_csv(WORKDIR/"dixon_coles_params_elo.csv", index=False, encoding="utf-8")
 
     if verbose:
         # Mostrar mayores movimientos

@@ -12,8 +12,8 @@ WORKDIR = Path(__file__).parent
 SRC = WORKDIR / "dashboard_template.html"
 OUT = WORKDIR / "forescore_mundial_dashboard.html"
 
-dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv")
-glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv")
+dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv", encoding="utf-8")
+glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv", encoding="utf-8")
 alpha = dict(zip(dc["team"], dc["alpha"]))
 beta = dict(zip(dc["team"], dc["beta"]))
 
@@ -38,7 +38,7 @@ for h in history:
     played[(h_es, a_es)] = h
     played[(h_en, a_en)] = h
 
-html = SRC.read_text()
+html = SRC.read_text(encoding="utf-8")
 m_matches = re.search(r"const matches = (\[.*?\]);", html, re.DOTALL)
 matches = json.loads(m_matches.group(1))
 
@@ -126,7 +126,7 @@ LIVE · {n_played} partidos procesados · {n_adj} equipos ajustados
 </div>"""
     html_out = html_out.replace("<body>", "<body>" + banner, 1)
 
-OUT.write_text(html_out)
+OUT.write_text(html_out, encoding="utf-8")
 print(f"Dashboard regenerado: {OUT.name}")
 print(f"  Partidos jugados: {n_played}")
 print(f"  Equipos con ajuste: {n_adj}")
