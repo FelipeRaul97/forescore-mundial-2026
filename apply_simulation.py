@@ -19,6 +19,9 @@ html = (OUT if OUT.exists() else SRC).read_text(encoding="utf-8")
 m = re.search(r"const teams = (\[.*?\]);", html, re.DOTALL)
 teams = json.loads(m.group(1))
 
+# Guardar snapshot anterior de p_champ para calcular movimiento
+prev_champ = {t["team"]: t.get("p_champ", 0) for t in teams}
+
 for t in teams:
     name = t["team"]
     t["pen_pct"] = float(pp.get(name, 0.50))
@@ -28,13 +31,13 @@ for t in teams:
         t["p_advance"] = float(r["p_advance"]); t["p_r16"] = float(r["p_r16"])
         t["p_qf"] = float(r["p_qf"]); t["p_sf"] = float(r["p_sf"])
         t["p_final"] = float(r["p_final"]); t["p_champ"] = float(r["p_champ"])
-        # Intervalo aproximado: +- 1.96*sqrt(p(1-p)/n_eff). n_eff ~ equipo dependiente,
-        # usamos banda heuristica proporcional para mantener el campo visual.
         p = float(r["p_champ"])
-        band = 1.96 * np.sqrt(max(p*(1-p),1e-6)/300)  # banda visual
+        band = 1.96 * np.sqrt(max(p*(1-p),1e-6)/300)
         t["p_champ_mean"] = p
         t["p_champ_lo"] = max(0, p - band)
         t["p_champ_hi"] = min(1, p + band)
+        t["p_champ_prev"] = float(prev_champ.get(name, p))
+        t["p_champ_delta"] = round(p - float(prev_champ.get(name, p)), 5)
 
 new_json = json.dumps(teams, ensure_ascii=False)
 html_out = re.sub(r"const teams = \[.*?\];", f"const teams = {new_json};",

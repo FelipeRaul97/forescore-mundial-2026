@@ -130,6 +130,30 @@
   .group-table .gt-stat { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-align: right; }
   .group-table .gt-prob { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; font-weight: 500; }
   .group-table .gt-prob.high { color: var(--accent); font-weight: 700; }
+
+  /* Delta arrows */
+  .delta-up { color: #4a6b3e; font-weight: 700; }
+  .delta-dn { color: #c8331e; font-weight: 700; }
+  .delta-eq { color: var(--muted); }
+  /* Heatmap */
+  .heatmap-wrap { overflow-x: auto; margin-top: 12px; }
+  .heatmap-table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .heatmap-table td, .heatmap-table th { width: 36px; height: 36px; text-align: center; border: 1px solid rgba(42,37,30,0.1); }
+  .heatmap-table th { background: var(--paper-dark); font-size: 10px; color: var(--muted); }
+  /* Timeline chart */
+  .timeline-wrap { overflow-x: auto; margin-top: 16px; }
+  /* Thirds table */
+  .thirds-table { width: 100%; border-collapse: collapse; max-width: 860px; }
+  .thirds-table th { font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:8px 6px;border-bottom:2px solid var(--ink);text-align:right; }
+  .thirds-table th:first-child { text-align:left; }
+  .thirds-table td { padding:10px 6px;border-bottom:1px solid rgba(42,37,30,0.1);font-variant-numeric:tabular-nums; }
+  .thirds-table .t-qualify { background: rgba(74,107,62,0.08); }
+  /* Calibration */
+  .calib-table { width:100%;border-collapse:collapse;max-width:860px; }
+  .calib-table th { font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:8px 6px;border-bottom:2px solid var(--ink);text-align:right; }
+  .calib-table th:first-child { text-align:left; }
+  .calib-table td { padding:10px 6px;border-bottom:1px solid rgba(42,37,30,0.1);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right; }
+  .calib-table td:first-child { font-family:'Fraunces',serif;font-size:15px;font-weight:500;text-align:left; }
 </style>
 </head>
 <body>
@@ -150,9 +174,12 @@
   <button class="tab active" onclick="showSection('overview', this)">Top Candidatos</button>
   <button class="tab" onclick="showSection('changes', this)">Cómo funciona</button>
   <button class="tab" onclick="showSection('groups', this)">Grupos</button>
+  <button class="tab" onclick="showSection('thirds', this)">Terceros</button>
   <button class="tab" onclick="showSection('matches', this)">Marcadores</button>
   <button class="tab" onclick="showSection('knockout', this)">Eliminatorias</button>
   <button class="tab" onclick="showSection('bracket', this)">Camino al título</button>
+  <button class="tab" onclick="showSection('timeline', this)">Timeline</button>
+  <button class="tab" onclick="showSection('calibration', this)">Calibración</button>
 </nav>
 
 <section id="overview" class="section active">
@@ -237,6 +264,13 @@
   <div class="group-grid" id="groupGrid"></div>
 </section>
 
+<section id="thirds" class="section">
+  <div class="kicker">Fase de grupos · Mejores terceros</div>
+  <h2 class="section-title">Ranking de terceros</h2>
+  <p style="font-family:'Fraunces',serif;font-size:18px;color:var(--muted);max-width:800px;margin-bottom:36px;font-style:italic;">Los 8 mejores terceros de los 12 grupos clasifican a octavos. La FIFA determina sus cruces al cierre de la fase de grupos.</p>
+  <div id="thirdsContainer"></div>
+</section>
+
 <section id="matches" class="section">
   <div class="kicker">Predicciones partido a partido</div>
   <h2 class="section-title">Distribución de marcadores</h2>
@@ -271,6 +305,20 @@
 </section>
 
 
+<section id="timeline" class="section">
+  <div class="kicker">Evolución del modelo</div>
+  <h2 class="section-title">Movimiento de probabilidades</h2>
+  <p style="font-family:'Fraunces',serif;font-size:18px;color:var(--muted);max-width:800px;margin-bottom:36px;font-style:italic;">Cómo han cambiado las probabilidades de campeón tras cada partido jugado.</p>
+  <div id="timelineContainer"></div>
+</section>
+
+<section id="calibration" class="section">
+  <div class="kicker">Validación en vivo</div>
+  <h2 class="section-title">Modelo vs realidad</h2>
+  <p style="font-family:'Fraunces',serif;font-size:18px;color:var(--muted);max-width:800px;margin-bottom:36px;font-style:italic;">Comparación entre las lambdas predichas y los goles reales anotados.</p>
+  <div id="calibrationContainer"></div>
+</section>
+
 <footer>
   <span>Forescore Mundial 2026 · v3.0</span>
   <span>50.000 sims · Dixon-Coles + penales + threshold empate</span>
@@ -298,6 +346,180 @@ function ciStrip(mean, lo, hi, maxScale) {
     <div class="ci-mean" style="left: ${m}%"></div>
     <span class="ci-label">${(mean*100).toFixed(1)}% [${(lo*100).toFixed(1)}–${(hi*100).toFixed(1)}]</span>
   </div>`;
+}
+
+function toggleHeatmap(btn, m) {
+  const wrap = btn.nextElementSibling;
+  if (wrap.style.display !== 'none') { wrap.style.display='none'; btn.textContent='Heatmap ▾'; return; }
+  btn.textContent='Heatmap ▴';
+  const lh = m.lambda_h||1, la = m.lambda_a||1;
+  const MAX=6;
+  const pois=(l,k)=>Math.exp(-l)*Math.pow(l,k)/[1,1,2,6,24,120,720][k];
+  const cells=[];
+  let maxP=0;
+  for(let h=0;h<=MAX;h++) for(let a=0;a<=MAX;a++){const p=pois(lh,h)*pois(la,a);if(p>maxP)maxP=p;cells.push({h,a,p});}
+  const rows=[];
+  for(let h=MAX;h>=0;h--){
+    let row=`<tr><th>${h}</th>`;
+    for(let a=0;a<=MAX;a++){
+      const p=cells.find(c=>c.h===h&&c.a===a).p;
+      const alpha=Math.round(220*(p/maxP));
+      const isActual=m.played&&m.score_h===h&&m.score_a===a;
+      const bg=isActual?'#4a6b3e':`rgba(200,51,30,${(p/maxP*0.85).toFixed(2)})`;
+      const color=isActual||alpha>140?'#f4ede2':'var(--ink)';
+      row+=`<td style="background:${bg};color:${color};font-size:10px;">${(p*100).toFixed(1)}</td>`;
+    }
+    rows.push(row+'</tr>');
+  }
+  wrap.innerHTML=`<table class="heatmap-table"><thead><tr><th>L\\V</th>${Array.from({length:MAX+1},(_,i)=>`<th>${i}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">Filas=goles local · Columnas=goles visitante · Valores=%</div>`;
+  wrap.style.display='block';
+}
+
+function renderThirds() {
+  // Calcular puntos reales de cada equipo
+  const realPts={}, realGd={}, realGf={};
+  teams.forEach(t=>{ realPts[t.team]=0; realGd[t.team]=0; realGf[t.team]=0; });
+  matches.filter(m=>m.played).forEach(m=>{
+    const hen=teams.find(t=>t.team_es===m.home_es)?.team;
+    const aen=teams.find(t=>t.team_es===m.away_es)?.team;
+    if(!hen||!aen) return;
+    if(m.score_h>m.score_a){realPts[hen]+=3;}
+    else if(m.score_h<m.score_a){realPts[aen]+=3;}
+    else{realPts[hen]+=1;realPts[aen]+=1;}
+    realGd[hen]+=(m.score_h-m.score_a); realGd[aen]+=(m.score_a-m.score_h);
+    realGf[hen]+=m.score_h; realGf[aen]+=m.score_a;
+  });
+  // Obtener el 3er lugar de cada grupo
+  const gm={};
+  teams.forEach(t=>{ if(!gm[t.group]) gm[t.group]=[]; gm[t.group].push(t); });
+  const thirds=[];
+  Object.entries(gm).forEach(([g,ts])=>{
+    const sorted=[...ts].sort((a,b)=>b.avg_points-a.avg_points);
+    if(sorted[2]) thirds.push({...sorted[2], group:g});
+  });
+  thirds.sort((a,b)=>{
+    const pa=realPts[a.team]??0, pb=realPts[b.team]??0;
+    if(pb!==pa) return pb-pa;
+    const da=realGd[a.team]??0, db=realGd[b.team]??0;
+    if(db!==da) return db-da;
+    return (realGf[b.team]??0)-(realGf[a.team]??0);
+  });
+  const hasAnyReal = thirds.some(t=>(realPts[t.team]||0)>0);
+  if(!hasAnyReal) thirds.sort((a,b)=>b.avg_points-a.avg_points);
+
+  document.getElementById('thirdsContainer').innerHTML=`
+    <table class="thirds-table">
+      <thead><tr>
+        <th>#</th><th style="text-align:left">Equipo</th><th>Grupo</th>
+        <th title="Puntos reales">PTS R</th>
+        <th title="Puntos promedio simulados">PTS E</th>
+        <th>DG</th><th>GF</th>
+        <th>P. pasar</th>
+      </tr></thead>
+      <tbody>
+        ${thirds.map((t,i)=>{
+          const rp=realPts[t.team]||0;
+          const rd=realGd[t.team]||0;
+          const rf=realGf[t.team]||0;
+          const qualify=i<8;
+          return `<tr class="${qualify?'t-qualify':''}">
+            <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${qualify?'#4a6b3e':'var(--muted)'};font-weight:700;text-align:right;">${i+1}</td>
+            <td style="font-family:'Fraunces',serif;font-size:15px;font-weight:500;">${t.team_es}${qualify?' <span style="color:#4a6b3e;font-size:11px;">✓</span>':''}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;">${t.group}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${rp>0?'#4a6b3e':'var(--muted)'};">${rp>0?rp:'—'}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">${(t.avg_points||0).toFixed(1)}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rd>0?'+':''}${rd}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rf}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:${t.p_3rd>0.3?'700':'400'};color:${t.p_3rd>0.3?'var(--accent)':'inherit'};">${(t.p_3rd*100).toFixed(0)}%</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:16px;text-transform:uppercase;letter-spacing:0.1em;">Ordenado por PTS reales · DG · GF. Los 8 primeros (fondo verde) clasificarían a octavos según el modelo. La FIFA confirma los cruces al cierre de grupos.</p>`;
+}
+
+function renderTimeline() {
+  const played = matches.filter(m=>m.played).sort((a,b)=>a.date.localeCompare(b.date));
+  if(played.length===0){
+    document.getElementById('timelineContainer').innerHTML='<p style="font-family:\'Fraunces\',serif;font-size:18px;color:var(--muted);font-style:italic;">Sin partidos jugados todavía.</p>';
+    return;
+  }
+  const top8=[...teams].sort((a,b)=>b.p_champ-a.p_champ).slice(0,8);
+  const rows=top8.map(t=>{
+    const d=t.p_champ_delta||0;
+    const dStr=d>0.0005?`<span class="delta-up">▲ +${(d*100).toFixed(1)}pp</span>`:d<-0.0005?`<span class="delta-dn">▼ ${(d*100).toFixed(1)}pp</span>`:`<span class="delta-eq">—</span>`;
+    return `<div style="display:grid;grid-template-columns:200px 120px 1fr 140px;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid rgba(42,37,30,0.1);">
+      <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:500;">${t.team_es}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);">${(t.p_champ*100).toFixed(1)}%</div>
+      <div style="background:var(--paper-dark);height:8px;border-radius:2px;position:relative;">
+        <div style="position:absolute;left:0;top:0;bottom:0;background:var(--accent);width:${Math.min(t.p_champ*300,100)}%;border-radius:2px;"></div>
+        ${t.p_champ_prev?`<div style="position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted);left:${Math.min((t.p_champ_prev||0)*300,100)}%;"></div>`:''}
+      </div>
+      <div style="text-align:right;">${dStr}</div>
+    </div>`;
+  });
+  const eventLog=played.map(m=>`<div style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 0;border-bottom:1px solid rgba(42,37,30,0.08);color:var(--muted);">
+    <span style="color:var(--ink);font-weight:700;">${m.date.substring(5)}</span> · ${m.home_es} <strong style="color:#4a6b3e;">${m.score_h}–${m.score_a}</strong> ${m.away_es}
+  </div>`).join('');
+  document.getElementById('timelineContainer').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:48px;align-items:start;">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);margin-bottom:16px;">Top 8 · P(campeón) actual vs anterior simulación</div>
+        ${rows.join('')}
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);margin-bottom:16px;">Partidos procesados</div>
+        ${eventLog}
+      </div>
+    </div>`;
+}
+
+function renderCalibration() {
+  const played=matches.filter(m=>m.played);
+  if(played.length===0){
+    document.getElementById('calibrationContainer').innerHTML='<p style="font-family:\'Fraunces\',serif;font-size:18px;color:var(--muted);font-style:italic;">Sin partidos jugados todavía.</p>';
+    return;
+  }
+  const totalPredH=played.reduce((s,m)=>s+(m.lambda_h_pred||m.lambda_h||0),0);
+  const totalPredA=played.reduce((s,m)=>s+(m.lambda_a_pred||m.lambda_a||0),0);
+  const totalRealH=played.reduce((s,m)=>s+m.score_h,0);
+  const totalRealA=played.reduce((s,m)=>s+m.score_a,0);
+  const rows=played.map(m=>{
+    const lh=m.lambda_h_pred||m.lambda_h||0;
+    const la=m.lambda_a_pred||m.lambda_a||0;
+    const errH=m.score_h-lh, errA=m.score_a-la;
+    const surprise=Math.abs(errH)+Math.abs(errA);
+    return `<tr>
+      <td>${m.date.substring(5)}</td>
+      <td style="text-align:left;font-family:'Fraunces',serif;font-size:14px;">${m.home_es} vs ${m.away_es}</td>
+      <td>${lh.toFixed(2)}</td><td>${m.score_h}</td>
+      <td style="color:${errH>0?'#4a6b3e':errH<0?'#c8331e':'var(--muted)'}">${errH>0?'+':''}${errH.toFixed(2)}</td>
+      <td>${la.toFixed(2)}</td><td>${m.score_a}</td>
+      <td style="color:${errA>0?'#4a6b3e':errA<0?'#c8331e':'var(--muted)'}">${errA>0?'+':''}${errA.toFixed(2)}</td>
+      <td style="font-weight:${surprise>2?'700':'400'};color:${surprise>2?'var(--accent)':'inherit'}">${surprise.toFixed(2)}</td>
+    </tr>`;
+  });
+  document.getElementById('calibrationContainer').innerHTML=`
+    <table class="calib-table">
+      <thead><tr>
+        <th style="text-align:left">Fecha</th><th style="text-align:left">Partido</th>
+        <th>λ Local</th><th>Goles L</th><th>Error L</th>
+        <th>λ Visit.</th><th>Goles V</th><th>Error V</th>
+        <th>Sorpresa</th>
+      </tr></thead>
+      <tbody>${rows.join('')}</tbody>
+      <tfoot style="border-top:2px solid var(--ink);">
+        <tr>
+          <td colspan="2" style="font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;color:var(--muted);">Totales (${played.length} partidos)</td>
+          <td>${totalPredH.toFixed(2)}</td><td>${totalRealH}</td>
+          <td style="color:${totalRealH>totalPredH?'#4a6b3e':'#c8331e'}">${totalRealH>totalPredH?'+':''}${(totalRealH-totalPredH).toFixed(2)}</td>
+          <td>${totalPredA.toFixed(2)}</td><td>${totalRealA}</td>
+          <td style="color:${totalRealA>totalPredA?'#4a6b3e':'#c8331e'}">${totalRealA>totalPredA?'+':''}${(totalRealA-totalPredA).toFixed(2)}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:16px;text-transform:uppercase;letter-spacing:0.1em;">Error = goles reales − lambda predicha. Sorpresa = |error local| + |error visitante|.</p>`;
 }
 
 function renderLeaderboard() {
@@ -347,6 +569,7 @@ function renderLeaderboard() {
       <div class="rank ${i<3?'top':''}">${String(i+1).padStart(2,'0')}</div>
       <div>
         <div class="team-name">${t.team_es}</div>
+        ${(()=>{const d=t.p_champ_delta||0;const abs=(d*100).toFixed(1);return d>0.0005?`<div class="team-group delta-up">▲ +${abs}pp desde última sim</div>`:d<-0.0005?`<div class="team-group delta-dn">▼ ${abs}pp desde última sim</div>`:'';})()}
         <div class="team-group">Grupo ${t.group} · Pasa ${(t.p_advance*100).toFixed(0)}% · SF ${(t.p_sf*100).toFixed(0)}%</div>
       </div>
       <div>${ciStrip(t.p_champ, t.p_champ_lo || t.p_champ*0.5, t.p_champ_hi || t.p_champ*1.5, maxHi)}</div>
@@ -361,21 +584,41 @@ function renderGroups() {
     return `<div class="group-card">
       <div class="group-header">
         <div class="group-letter">${g}</div>
-        <div class="group-tag">Tabla esperada<br>30k simulaciones</div>
+        <div class="group-tag">Tabla esperada<br>50k simulaciones</div>
       </div>
       <table class="group-table">
         <thead><tr>
-          <th>Equipo</th><th>Pts</th><th>DG</th><th>GF</th><th>1º</th><th>Pasa</th>
+          <th>Equipo</th><th title="Puntos reales jugados">PTS R</th><th title="Puntos promedio simulados (reales + esperados)">PTS E</th><th>DG</th><th>GF</th><th>1º</th><th>Pasa</th>
         </tr></thead>
         <tbody>
-        ${sub.map((t,i) => `<tr>
+        ${(()=>{
+          // Calcular puntos reales de partidos jugados en este grupo
+          const realPts = {}, realGd = {}, realGf = {};
+          sub.forEach(t => { realPts[t.team_es]=0; realGd[t.team_es]=0; realGf[t.team_es]=0; });
+          matches.filter(m => m.played && (sub.some(t=>t.team_es===m.home_es)||sub.some(t=>t.team_es===m.away_es))).forEach(m => {
+            if(m.score_h > m.score_a){ realPts[m.home_es]=(realPts[m.home_es]||0)+3; }
+            else if(m.score_h < m.score_a){ realPts[m.away_es]=(realPts[m.away_es]||0)+3; }
+            else { realPts[m.home_es]=(realPts[m.home_es]||0)+1; realPts[m.away_es]=(realPts[m.away_es]||0)+1; }
+            realGd[m.home_es]=(realGd[m.home_es]||0)+(m.score_h-m.score_a);
+            realGd[m.away_es]=(realGd[m.away_es]||0)+(m.score_a-m.score_h);
+            realGf[m.home_es]=(realGf[m.home_es]||0)+m.score_h;
+            realGf[m.away_es]=(realGf[m.away_es]||0)+m.score_a;
+          });
+          return sub.map((t,i) => {
+            const rp = realPts[t.team_es]||0;
+            const rd = realGd[t.team_es]||0;
+            const rf = realGf[t.team_es]||0;
+            const hasReal = rp > 0 || Object.values(realPts).some(v=>v>0);
+            return `<tr>
           <td class="gt-name">${t.team_es}</td>
-          <td class="gt-pts ${i===0?'top':''}">${(t.avg_points||0).toFixed(2)}</td>
+          <td class="gt-pts" style="color:${hasReal?'#4a6b3e':'var(--muted)'};">${hasReal?rp:'—'}</td>
+          <td class="gt-pts ${i===0?'top':''}">${(t.avg_points||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gd||0)>0?'+':''}${(t.avg_gd||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gf||0).toFixed(1)}</td>
           <td class="gt-prob ${t.p_1st>0.5?'high':''}">${(t.p_1st*100).toFixed(0)}%</td>
           <td class="gt-prob ${t.p_advance>0.85?'high':''}">${(t.p_advance*100).toFixed(0)}%</td>
-        </tr>`).join('')}
+        </tr>`;}).join('');
+        })()}
         </tbody>
       </table>
     </div>`;
@@ -439,7 +682,11 @@ function renderMatches() {
         </div>`;
       }
     }
-    const scoresSection = `<div class="match-scores" style="${m.played?'flex-wrap:wrap;':''}">
+    const heatmapBtn = !m.played ? `<div style="margin-top:8px;">
+  <button onclick="toggleHeatmap(this, ${JSON.stringify(m).replace(/"/g,'&quot;')})" style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;background:none;border:1px solid var(--rule);padding:4px 8px;cursor:pointer;color:var(--muted);">Heatmap ▾</button>
+  <div class="heatmap-wrap" style="display:none;"></div>
+</div>` : '';
+    const scoresSection = `<div><div class="match-scores" style="${m.played?'flex-wrap:wrap;':''}">
       ${extraChip}
       ${scores.map((s,i) => {
         const isActual = m.played && s === `${m.score_h}-${m.score_a}`;
@@ -451,7 +698,7 @@ function renderMatches() {
           <div class="score-prob" style="${textStyle}">${(probs[i]*100).toFixed(0)}%</div>
         </div>`;
       }).join('')}
-    </div>`;
+    </div>${heatmapBtn}</div>`;
     const cardStyle = m.played ? ' style="background:rgba(74,107,62,0.08);border-left:3px solid #4a6b3e;"' : '';
     return `<div class="match-card"${cardStyle}>
       <div><div class="match-date">${m.date.substring(5)}</div></div>
@@ -501,6 +748,9 @@ function showSection(name, btn) {
   if (name === 'matches') renderMatches();
   if (name === 'bracket') renderBracket();
   if (name === 'knockout') renderKnockout();
+  if (name === 'thirds') renderThirds();
+  if (name === 'timeline') renderTimeline();
+  if (name === 'calibration') renderCalibration();
 }
 
 // ---- Bracket eliminatorio (proyección por slots oficiales) ----
@@ -512,25 +762,33 @@ const KO_R32 = {
 };
 
 function projectedTeamForSlot(slot) {
-  // Si hay clasificado confirmado para este slot, devolverlo
   if (typeof qualifiers !== 'undefined' && qualifiers[slot]) {
-    return {name: qualifiers[slot], p: null, confirmed: true};
+    return {name: qualifiers[slot], p: null, confirmed: true, alt: null};
   }
   const [typ, grp] = slot.split(":");
   if (typ === "W") {
-    const cand = teams.filter(t => t.group === grp);
-    cand.sort((a,b) => b.p_1st - a.p_1st);
-    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_1st} : {name:"?", p:0};
+    const cand = [...teams.filter(t => t.group === grp)].sort((a,b) => b.p_1st - a.p_1st);
+    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_1st, alt: cand[1]?{name:cand[1].team_es,p:cand[1].p_1st}:null} : {name:"?", p:0, alt:null};
   }
   if (typ === "R") {
-    const cand = teams.filter(t => t.group === grp);
-    cand.sort((a,b) => b.p_2nd - a.p_2nd);
-    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_2nd} : {name:"?", p:0};
+    const cand = [...teams.filter(t => t.group === grp)].sort((a,b) => b.p_2nd - a.p_2nd);
+    return cand[0] ? {name: cand[0].team_es, p: cand[0].p_2nd, alt: cand[1]?{name:cand[1].team_es,p:cand[1].p_2nd}:null} : {name:"?", p:0, alt:null};
   }
-  // T: mejor tercero entre los grupos del cluster
-  const cand = teams.filter(t => grp.includes(t.group));
-  cand.sort((a,b) => b.p_3rd - a.p_3rd);
-  return cand[0] ? {name: cand[0].team_es+" (3º)", p: cand[0].p_3rd} : {name:"?", p:0};
+  const cand = [...teams.filter(t => grp.includes(t.group))].sort((a,b) => b.p_3rd - a.p_3rd);
+  return cand[0] ? {name: cand[0].team_es+" (3º)", p: cand[0].p_3rd, alt: cand[1]?{name:cand[1].team_es+" (3º)",p:cand[1].p_3rd}:null} : {name:"?", p:0, alt:null};
+}
+
+function teamLine(t) {
+  if(t.confirmed) return `<div style="display:flex;justify-content:space-between;align-items:baseline;">
+    <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#4a6b3e;">${t.name} ✓</span>
+  </div>`;
+  return `<div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <span style="font-family:'Fraunces',serif;font-size:15px;font-weight:500;">${t.name}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${(t.p*100).toFixed(0)}%</span>
+    </div>
+    ${t.alt?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;">o ${t.alt.name} (${(t.alt.p*100).toFixed(0)}%)</div>`:''}
+  </div>`;
 }
 
 function renderKnockout() {
@@ -540,15 +798,9 @@ function renderKnockout() {
     const b = projectedTeamForSlot(KO_R32[m][1]);
     return `<div style="background: var(--paper); border: 1px solid var(--rule); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted);">MATCH ${m} · R32</div>
-      <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: ${a.confirmed?'700':'500'}; color: ${a.confirmed?'#4a6b3e':'inherit'};">${a.name}${a.confirmed?' ✓':''}</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${a.confirmed ? '' : (a.p*100).toFixed(0)+'%'}</span>
-      </div>
+      ${teamLine(a)}
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-align: center;">vs</div>
-      <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: ${b.confirmed?'700':'500'}; color: ${b.confirmed?'#4a6b3e':'inherit'};">${b.name}${b.confirmed?' ✓':''}</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${b.confirmed ? '' : (b.p*100).toFixed(0)+'%'}</span>
-      </div>
+      ${teamLine(b)}
     </div>`;
   }).join('');
   document.getElementById('knockoutBracket').innerHTML =
