@@ -192,12 +192,21 @@ def update(args):
     state["beta_adj"][home]  = state["beta_adj"].get(home, 0)  - BW*diff_a/2
     state["history"].append({"date": datetime.now().isoformat(), "home": home, "away": away,
                              "score": args.score, "lh_pred": float(lh_pred), "la_pred": float(la_pred)})
+
+    # Detectar grupos completados y registrar clasificados W: y R:
+    newly_qualified = auto_qualify(state, base)
+
     save_state(state)
     print(f"\nUPDATE: {home} {sh}-{sa} {away}")
     print(f"lambdas predichas: {lh_pred:.2f} - {la_pred:.2f}")
     print(f"\nAjustes Bayesianos aplicados (peso={BW}):")
     print(f"  alpha_{home}: {state['alpha_adj'][home]:+.3f}")
     print(f"  alpha_{away}: {state['alpha_adj'][away]:+.3f}")
+    if newly_qualified:
+        print(f"\nGrupos cerrados — clasificados registrados automáticamente:")
+        for group, w, r in newly_qualified:
+            print(f"  Grupo {group}: 1º {w}  ·  2º {r}")
+        print("  (Los mejores terceros debes registrarlos con: partido.bat qualify \"Equipo\" \"T:XXXX\")")
     # Regenerar dashboard
     print("\nRegenerando dashboard...")
     try:
@@ -253,6 +262,116 @@ def resimulate(args):
     print("Aplicando simulación al dashboard...")
     subprocess.run([sys.executable, str(WORKDIR/"apply_simulation.py")], check=True)
     print("Listo. Recuerda: git add forescore_mundial_dashboard.html && git commit && git push")
+
+def auto_qualify(state, base):
+    """Detecta grupos completados y registra W: y R: automáticamente."""
+    import re, json
+    from pathlib import Path
+
+    # Cargar estructura de partidos y equipos del template
+    template = WORKDIR / "dashboard_template.html"
+    html = template.read_text(encoding="utf-8")
+    m = re.search(r"const matches = (\[.*?\]);", html, re.DOTALL)
+    m2 = re.search(r"const teams = (\[.*?\]);", html, re.DOTALL)
+    if not m or not m2:
+        return []
+
+    all_matches = json.loads(m.group(1))
+    all_teams = json.loads(m2.group(1))
+
+    # Índice equipo_es → grupo e inglés
+    es_to_group = {t["team_es"]: t["group"] for t in all_teams}
+    es_to_en = {t["team_es"]: t["team"] for t in all_teams}
+
+    # Partidos jugados según historial
+    played_pairs = set()
+    for h in state["history"]:
+        h_es = base["es_by_en"].get(h["home"], h["home"])
+        a_es = base["es_by_en"].get(h["away"], h["away"])
+        played_pairs.add((h_es, a_es))
+
+    # Agrupar partidos del template por grupo
+    from collections import defaultdict
+    group_matches = defaultdict(list)
+    for mt in all_matches:
+        g = es_to_group.get(mt["home_es"])
+        if g:
+            group_matches[g].append(mt)
+
+    if "qualifiers" not in state:
+        state["qualifiers"] = {}
+
+    newly_qualified = []
+    for group, gmatches in group_matches.items():
+        # Grupo completo = los 6 partidos jugados
+        if len(gmatches) != 6:
+            continue
+        all_played = all(
+            (mt["home_es"], mt["away_es"]) in played_pairs or
+            (mt["away_es"], mt["home_es"]) in played_pairs
+            for mt in gmatches
+        )
+        if not all_played:
+            continue
+
+        # Ya están registrados?
+        if f"W:{group}" in state["qualifiers"] and f"R:{group}" in state["qualifiers"]:
+            continue
+
+        # Calcular tabla real
+        points = defaultdict(int)
+        gd = defaultdict(int)
+        gf = defaultdict(int)
+        for mt in gmatches:
+            h_es, a_es = mt["home_es"], mt["away_es"]
+            # Buscar score en historial
+            score = None
+            for h in state["history"]:
+                h_es2 = base["es_by_en"].get(h["home"], h["home"])
+                a_es2 = base["es_by_en"].get(h["away"], h["away"])
+                if (h_es2, a_es2) == (h_es, a_es) or (a_es2, h_es2) == (h_es, a_es):
+                    score = h["score"]
+                    if (a_es2, h_es2) == (h_es, a_es):
+                        parts = score.split("-")
+                        score = f"{parts[1]}-{parts[0]}"
+                    break
+            if not score:
+                continue
+            sh, sa = map(int, score.split("-"))
+            if sh > sa:
+                points[h_es] += 3
+            elif sh == sa:
+                points[h_es] += 1; points[a_es] += 1
+            else:
+                points[a_es] += 3
+            gd[h_es] += sh - sa; gd[a_es] += sa - sh
+            gf[h_es] += sh; gf[a_es] += sa
+
+        group_team_names = [mt["home_es"] for mt in gmatches[:4:2]] + \
+                           [mt["away_es"] for mt in gmatches[:4:2]]
+        group_team_names = list({es_to_group.get(t) and t for t in
+                                  [mt["home_es"] for mt in gmatches] +
+                                  [mt["away_es"] for mt in gmatches]
+                                  if es_to_group.get(t) == group})
+
+        standings = sorted(
+            group_team_names,
+            key=lambda t: (points[t], gd[t], gf[t]),
+            reverse=True
+        )
+        if len(standings) < 2:
+            continue
+
+        winner_es, runner_es = standings[0], standings[1]
+        winner_en = es_to_en.get(winner_es, winner_es)
+        runner_en = es_to_en.get(runner_es, runner_es)
+
+        state["qualifiers"][f"W:{group}"] = winner_en
+        state["qualifiers"][f"R:{group}"] = runner_en
+        newly_qualified.append((group, winner_es, runner_es))
+
+    return newly_qualified
+
 
 def qualify(args):
     """Registra un clasificado confirmado a la fase eliminatoria."""
