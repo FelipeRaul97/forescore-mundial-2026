@@ -82,51 +82,7 @@ else:
     html_out = html_out.replace("const KO_R32 =",
                                 f"const qualifiers = {qual_json};\nconst KO_R32 =", 1)
 
-# Patch JS: marcar visualmente los partidos jugados
-patch = """
-// === live-update patch ===
-(function(){
-  function applyPlayed(){
-    if (typeof matches === 'undefined') return;
-    const playedMap = {};
-    matches.forEach(m => { if(m.played) playedMap[m.home_es+'|'+m.away_es] = m; });
-    document.querySelectorAll('tr, .match-row, .match-card').forEach(r => {
-      const txt = r.textContent || '';
-      Object.keys(playedMap).forEach(k => {
-        const [h,a] = k.split('|');
-        if (txt.includes(h) && txt.includes(a)) {
-          const m = playedMap[k];
-          r.style.background = 'rgba(74,107,62,0.10)';
-          r.style.borderLeft = '3px solid #4a6b3e';
-          // Inyectar marcador real si encontramos celdas de lambda
-          const cells = r.querySelectorAll('td');
-          cells.forEach(c => {
-            if (c.textContent.match(/^\\d+\\.\\d+$/)) {
-              // Reemplazar primera lambda por marcador
-              if (!r.dataset.scored) {
-                c.innerHTML = `<strong style="color:#4a6b3e">${m.score_h}–${m.score_a}</strong>`;
-                r.dataset.scored = '1';
-              }
-            }
-          });
-        }
-      });
-    });
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(applyPlayed, 100));
-  } else {
-    setTimeout(applyPlayed, 100);
-  }
-  // Re-aplicar tras cualquier render dinámico
-  const obs = new MutationObserver(() => setTimeout(applyPlayed, 50));
-  obs.observe(document.body, {childList: true, subtree: true});
-})();
-"""
-html_out = html_out.replace("</script>\n</body>", patch + "\n</script>\n</body>", 1)
-if patch not in html_out:
-    # fallback
-    html_out = html_out.replace("</body>", f"<script>{patch}</script>\n</body>", 1)
+# El patch JS ya no es necesario — renderMatches() maneja los jugados directamente
 
 # Banner si hay actividad
 n_played = len(history)

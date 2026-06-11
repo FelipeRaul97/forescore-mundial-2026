@@ -488,14 +488,14 @@ function renderCalibration() {
   const totalRealH=played.reduce((s,m)=>s+m.score_h,0);
   const totalRealA=played.reduce((s,m)=>s+m.score_a,0);
   const rows=played.map(m=>{
-    const lh=m.lambda_h_pred||m.lambda_h||0;
-    const la=m.lambda_a_pred||m.lambda_a||0;
+    const lh=parseFloat(m.lambda_h_pred||m.lambda_h||0);
+    const la=parseFloat(m.lambda_a_pred||m.lambda_a||0);
     const errH=m.score_h-lh, errA=m.score_a-la;
     const surprise=Math.abs(errH)+Math.abs(errA);
     return `<tr>
       <td>${m.date.substring(5)}</td>
       <td style="text-align:left;font-family:'Fraunces',serif;font-size:14px;">${m.home_es} vs ${m.away_es}</td>
-      <td>${lh.toFixed(2)}</td><td>${m.score_h}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#4a6b3e;">${m.score_h}–${m.score_a}</td><td>${lh.toFixed(2)}</td><td>${m.score_h}</td>
       <td style="color:${errH>0?'#4a6b3e':errH<0?'#c8331e':'var(--muted)'}">${errH>0?'+':''}${errH.toFixed(2)}</td>
       <td>${la.toFixed(2)}</td><td>${m.score_a}</td>
       <td style="color:${errA>0?'#4a6b3e':errA<0?'#c8331e':'var(--muted)'}">${errA>0?'+':''}${errA.toFixed(2)}</td>
@@ -506,7 +506,7 @@ function renderCalibration() {
     <table class="calib-table">
       <thead><tr>
         <th style="text-align:left">Fecha</th><th style="text-align:left">Partido</th>
-        <th>λ Local</th><th>Goles L</th><th>Error L</th>
+        <th>Resultado</th><th>λ Local</th><th>Goles L</th><th>Error L</th>
         <th>λ Visit.</th><th>Goles V</th><th>Error V</th>
         <th>Sorpresa</th>
       </tr></thead>
@@ -816,46 +816,6 @@ renderGroups();
 renderMatches();
 renderBracket();
 renderKnockout();
-
-// === live-update patch ===
-(function(){
-  function applyPlayed(){
-    if (typeof matches === 'undefined') return;
-    const playedMap = {};
-    matches.forEach(m => { if(m.played) playedMap[m.home_es+'|'+m.away_es] = m; });
-    document.querySelectorAll('tr, .match-row, .match-card').forEach(r => {
-      const txt = r.textContent || '';
-      Object.keys(playedMap).forEach(k => {
-        const [h,a] = k.split('|');
-        if (txt.includes(h) && txt.includes(a)) {
-          const m = playedMap[k];
-          r.style.background = 'rgba(74,107,62,0.10)';
-          r.style.borderLeft = '3px solid #4a6b3e';
-          // Inyectar marcador real si encontramos celdas de lambda
-          const cells = r.querySelectorAll('td');
-          cells.forEach(c => {
-            if (c.textContent.match(/^\d+\.\d+$/)) {
-              // Reemplazar primera lambda por marcador
-              if (!r.dataset.scored) {
-                c.innerHTML = `<strong style="color:#4a6b3e">${m.score_h}–${m.score_a}</strong>`;
-                r.dataset.scored = '1';
-              }
-            }
-          });
-        }
-      });
-    });
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(applyPlayed, 100));
-  } else {
-    setTimeout(applyPlayed, 100);
-  }
-  // Re-aplicar tras cualquier render dinámico
-  const obs = new MutationObserver(() => setTimeout(applyPlayed, 50));
-  obs.observe(document.body, {childList: true, subtree: true});
-})();
-
 </script>
 </body>
 </html>
