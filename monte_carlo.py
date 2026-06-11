@@ -44,12 +44,16 @@ def load_params():
     alpha = dict(zip(dc["team"], dc["alpha"]))
     beta = dict(zip(dc["team"], dc["beta"]))
     rho = float(glob["rho"].iloc[0])
+    played = {}  # {(home_en, away_en): (gh, ga)}
     sf = WORKDIR/"live_state.json"
     if sf.exists():
         st = json.load(open(sf))
         for t,v in st.get("alpha_adj",{}).items(): alpha[t] = alpha.get(t,0)+v
         for t,v in st.get("beta_adj",{}).items():  beta[t]  = beta.get(t,0)+v
-    return alpha, beta, rho
+        for h in st.get("history", []):
+            gh, ga = map(int, h["score"].split("-"))
+            played[(h["home"], h["away"])] = (gh, ga)
+    return alpha, beta, rho, played
 
 def apply_shrinkage(alpha, beta, lam=0.30):
     confs = {}
@@ -66,7 +70,7 @@ def apply_shrinkage(alpha, beta, lam=0.30):
     return a_sh, b_sh
 
 def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
-    alpha, beta, rho = load_params()
+    alpha, beta, rho, played_scores = load_params()
     if shrink > 0:
         alpha, beta = apply_shrinkage(alpha, beta, lam=shrink)
     teams_meta = json.load(open(WORKDIR/"teams_base.json"))
@@ -107,7 +111,12 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
             pts = {t:0 for t in ts}; gd = {t:0 for t in ts}; gf = {t:0 for t in ts}
             for i,j in gfix:
                 h, a = ts[i], ts[j]
-                gh, ga = play_goals(h,a)
+                if (h, a) in played_scores:
+                    gh, ga = played_scores[(h, a)]
+                elif (a, h) in played_scores:
+                    ga, gh = played_scores[(a, h)]
+                else:
+                    gh, ga = play_goals(h, a)
                 gf[h]+=gh; gf[a]+=ga; gd[h]+=gh-ga; gd[a]+=ga-gh
                 if gh>ga: pts[h]+=3
                 elif ga>gh: pts[a]+=3

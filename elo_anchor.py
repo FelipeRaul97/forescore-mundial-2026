@@ -59,7 +59,7 @@ def build(w=0.25, verbose=True):
         m["delta_s"] = m["s_new"] - m["s_model"]
         big = m.reindex(m["delta_s"].abs().sort_values(ascending=False).index)
         print(f"Blend Elo w={w}. Mayores cambios en fuerza neta (alpha-beta):")
-        print(f"{'Equipo':<16}{'s_model':>9}{'s_elo_z':>9}{'s_new':>8}{'Δ':>7}")
+        print(f"{'Equipo':<16}{'s_model':>9}{'s_elo_z':>9}{'s_new':>8}{'dif':>7}")
         for _,r in big.head(12).iterrows():
             print(f"{r['team']:<16}{r['s_model']:>9.3f}{r['z_elo']:>9.2f}{r['s_new']:>8.3f}{r['delta_s']:>+7.3f}")
     return out
