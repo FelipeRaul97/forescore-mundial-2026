@@ -1,10 +1,49 @@
 @echo off
 REM ============================================================
 REM  partido.bat - Forescore Mundial 2026
-REM  Uso:  partido.bat "Mexico" "South Africa" 2-1
-REM  Hace: update -> resimulate (50k) -> git commit -> git push
+REM
+REM  Resultado normal:
+REM    partido.bat "Mexico" "South Africa" 2-1
+REM
+REM  Registrar clasificado (al cerrar un grupo):
+REM    partido.bat qualify "Mexico" "W:A"
+REM    partido.bat qualify "Argentina" "R:B"
+REM    partido.bat qualify "Morocco" "T:ABCDF"
 REM ============================================================
 
+REM -- Modo qualify --
+if /i "%~1"=="qualify" (
+    if "%~3"=="" (
+        echo.
+        echo  USO: partido.bat qualify "Equipo" "Slot"
+        echo  Slots: W:X ^(1ro grupo X^), R:X ^(2do grupo X^), T:XXXX ^(mejor tercero^)
+        echo  Ejemplo: partido.bat qualify "Mexico" "W:A"
+        echo.
+        exit /b 1
+    )
+    set TEAM=%~2
+    set SLOT=%~3
+    echo.
+    echo ============================================================
+    echo   Registrando clasificado: %TEAM% -- %SLOT%
+    echo ============================================================
+    echo.
+    python live_update.py qualify --team "%TEAM%" --slot "%SLOT%"
+    if errorlevel 1 ( echo ERROR en qualify. Abortando. & exit /b 1 )
+    echo.
+    echo [2/2] Subiendo a GitHub...
+    git add forescore_mundial_dashboard.html live_state.json
+    git commit -m "Clasificado: %TEAM% %SLOT%"
+    git push
+    echo.
+    echo ============================================================
+    echo   LISTO. %TEAM% aparece confirmado en el bracket.
+    echo ============================================================
+    echo.
+    exit /b 0
+)
+
+REM -- Modo resultado normal --
 if "%~3"=="" (
     echo.
     echo  USO: partido.bat "Local" "Visitante" Marcador
