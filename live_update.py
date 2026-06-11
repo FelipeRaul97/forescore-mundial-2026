@@ -254,6 +254,29 @@ def resimulate(args):
     subprocess.run([sys.executable, str(WORKDIR/"apply_simulation.py")], check=True)
     print("Listo. Recuerda: git add forescore_mundial_dashboard.html && git commit && git push")
 
+def qualify(args):
+    """Registra un clasificado confirmado a la fase eliminatoria."""
+    base = load_base()
+    team_en = resolve_team(args.team, base)
+    if not team_en:
+        print(f"ERROR: equipo '{args.team}' no reconocido."); return
+    slot = args.slot.upper()  # e.g. W:A, R:B, T:ABCDF
+    valid_types = ("W:", "R:", "T:")
+    if not any(slot.startswith(t) for t in valid_types):
+        print(f"ERROR: slot debe ser W:X, R:X o T:XXXX (ej: W:A, R:B, T:ABCDF)"); return
+    state = load_state()
+    if "qualifiers" not in state:
+        state["qualifiers"] = {}
+    state["qualifiers"][slot] = team_en
+    save_state(state)
+    team_es = base["es_by_en"].get(team_en, team_en)
+    print(f"Clasificado registrado: {team_es} → slot {slot}")
+    print("Regenerando dashboard...")
+    try:
+        subprocess.run([sys.executable, str(WORKDIR/"build_dashboard.py")], check=True)
+    except Exception as e:
+        print(f"WARN: {e}")
+
 def main():
     p = argparse.ArgumentParser(description="Forescore v3.0 - live update")
     sub = p.add_subparsers(dest="command")
@@ -277,6 +300,9 @@ def main():
     sub.add_parser("status")
     sub.add_parser("reset")
     sub.add_parser("rebuild-dashboard")
+    pq = sub.add_parser("qualify", help="Registrar clasificado confirmado a eliminatorias")
+    pq.add_argument("--team", required=True, help="Nombre del equipo")
+    pq.add_argument("--slot", required=True, help="Slot del bracket: W:A (1ro grupo A), R:B (2do grupo B), T:ABCDF (mejor tercero)")
     prs = sub.add_parser("resimulate", help="Re-correr Monte Carlo y actualizar P(campeon)")
     prs.add_argument("--sims", type=int, default=50000)
     prs.add_argument("--k", type=float, default=18.0)
@@ -288,6 +314,7 @@ def main():
     elif args.command == "status": status(args)
     elif args.command == "reset": reset_cmd(args)
     elif args.command == "rebuild-dashboard": rebuild(args)
+    elif args.command == "qualify": qualify(args)
     elif args.command == "resimulate": resimulate(args)
     else: p.print_help()
 

@@ -507,6 +507,7 @@ function showSection(name, btn) {
 }
 
 // ---- Bracket eliminatorio (proyección por slots oficiales) ----
+const qualifiers = {};
 const KO_R32 = {
   73:["R:A","R:B"], 74:["W:E","T:ABCDF"], 75:["W:F","R:C"], 76:["W:C","R:F"],
   77:["W:I","T:CDFGH"], 78:["R:E","R:I"], 79:["W:A","T:CEFHI"], 80:["W:L","T:EHIJK"],
@@ -515,7 +516,10 @@ const KO_R32 = {
 };
 
 function projectedTeamForSlot(slot) {
-  // Devuelve el equipo más probable para un slot dado (W:grupo, R:grupo, T:cluster)
+  // Si hay clasificado confirmado para este slot, devolverlo
+  if (typeof qualifiers !== 'undefined' && qualifiers[slot]) {
+    return {name: qualifiers[slot], p: null, confirmed: true};
+  }
   const [typ, grp] = slot.split(":");
   if (typ === "W") {
     const cand = teams.filter(t => t.group === grp);
@@ -541,13 +545,13 @@ function renderKnockout() {
     return `<div style="background: var(--paper); border: 1px solid var(--rule); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted);">MATCH ${m} · R32</div>
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500;">${a.name}</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${(a.p*100).toFixed(0)}%</span>
+        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: ${a.confirmed?'700':'500'}; color: ${a.confirmed?'#4a6b3e':'inherit'};">${a.name}${a.confirmed?' ✓':''}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${a.confirmed ? '' : (a.p*100).toFixed(0)+'%'}</span>
       </div>
       <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-align: center;">vs</div>
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500;">${b.name}</span>
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${(b.p*100).toFixed(0)}%</span>
+        <span style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: ${b.confirmed?'700':'500'}; color: ${b.confirmed?'#4a6b3e':'inherit'};">${b.name}${b.confirmed?' ✓':''}</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);">${b.confirmed ? '' : (b.p*100).toFixed(0)+'%'}</span>
       </div>
     </div>`;
   }).join('');

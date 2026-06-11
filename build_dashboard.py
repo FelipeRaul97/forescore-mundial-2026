@@ -25,6 +25,7 @@ else:
 alpha_adj = state.get("alpha_adj", {})
 beta_adj = state.get("beta_adj", {})
 history = state.get("history", [])
+qualifiers = state.get("qualifiers", {})  # {slot: team_en}
 
 with open(WORKDIR / "teams_base.json", encoding="utf-8") as f: teams_meta = json.load(f)
 es_by_en = {t["team"]: t["team_es"] for t in teams_meta}
@@ -64,11 +65,22 @@ for mt in matches:
         mt["lambda_h"] = float(np.exp(a_h - b_a))
         mt["lambda_a"] = float(np.exp(a_a - b_h))
 
-# Reemplazar array
+# Reemplazar array matches
 new_json = json.dumps(matches, ensure_ascii=False)
 html_out = re.sub(r"const matches = \[.*?\];",
                   f"const matches = {new_json};",
                   html, count=1, flags=re.DOTALL)
+
+# Inyectar clasificados confirmados (slot → nombre en español)
+qualifiers_es = {slot: es_by_en.get(team, team) for slot, team in qualifiers.items()}
+qual_json = json.dumps(qualifiers_es, ensure_ascii=False)
+if re.search(r"const qualifiers = \{.*?\};", html_out, re.DOTALL):
+    html_out = re.sub(r"const qualifiers = \{.*?\};",
+                      f"const qualifiers = {qual_json};",
+                      html_out, count=1, flags=re.DOTALL)
+else:
+    html_out = html_out.replace("const KO_R32 =",
+                                f"const qualifiers = {qual_json};\nconst KO_R32 =", 1)
 
 # Patch JS: marcar visualmente los partidos jugados
 patch = """
