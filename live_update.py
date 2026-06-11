@@ -248,7 +248,9 @@ def resimulate(args):
                     "--sims", str(args.sims), "--k", str(args.k),
                     "--shrink", str(args.shrink), "--out", str(WORKDIR/"mc_final.csv")],
                    check=True)
-    print("Aplicando al dashboard...")
+    print("Regenerando dashboard con resultados reales...")
+    subprocess.run([sys.executable, str(WORKDIR/"build_dashboard.py")], check=True)
+    print("Aplicando simulación al dashboard...")
     subprocess.run([sys.executable, str(WORKDIR/"apply_simulation.py")], check=True)
     print("Listo. Recuerda: git add forescore_mundial_dashboard.html && git commit && git push")
 

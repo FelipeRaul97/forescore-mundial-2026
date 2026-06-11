@@ -15,7 +15,7 @@ OUT = WORKDIR / "forescore_mundial_dashboard.html"
 
 mc = pd.read_csv(WORKDIR / "mc_final.csv", encoding="utf-8").set_index("team")
 pp = pd.read_csv(WORKDIR / "penalty_probs.csv", encoding="utf-8").set_index("team")["p_win_smoothed"].to_dict()
-html = SRC.read_text(encoding="utf-8")
+html = (OUT if OUT.exists() else SRC).read_text(encoding="utf-8")
 m = re.search(r"const teams = (\[.*?\]);", html, re.DOTALL)
 teams = json.loads(m.group(1))
 

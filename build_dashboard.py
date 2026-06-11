@@ -26,7 +26,7 @@ alpha_adj = state.get("alpha_adj", {})
 beta_adj = state.get("beta_adj", {})
 history = state.get("history", [])
 
-with open(WORKDIR / "teams_base.json") as f: teams_meta = json.load(f)
+with open(WORKDIR / "teams_base.json", encoding="utf-8") as f: teams_meta = json.load(f)
 es_by_en = {t["team"]: t["team_es"] for t in teams_meta}
 en_by_es = {t["team_es"]: t["team"] for t in teams_meta}
 
