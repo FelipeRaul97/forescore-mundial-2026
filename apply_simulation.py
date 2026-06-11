@@ -19,8 +19,10 @@ html = (OUT if OUT.exists() else SRC).read_text(encoding="utf-8")
 m = re.search(r"const teams = (\[.*?\]);", html, re.DOTALL)
 teams = json.loads(m.group(1))
 
-# Guardar snapshot anterior de p_champ para calcular movimiento
-prev_champ = {t["team"]: t.get("p_champ", 0) for t in teams}
+# Leer snapshot anterior desde live_state.json (fuente de verdad para deltas)
+state_file = WORKDIR / "live_state.json"
+state = json.loads(state_file.read_text()) if state_file.exists() else {}
+prev_champ = state.get("p_champ_snapshot", {})  # vacío = primera simulación → delta=0
 
 for t in teams:
     name = t["team"]
@@ -36,8 +38,14 @@ for t in teams:
         t["p_champ_mean"] = p
         t["p_champ_lo"] = max(0, p - band)
         t["p_champ_hi"] = min(1, p + band)
-        t["p_champ_prev"] = float(prev_champ.get(name, p))
-        t["p_champ_delta"] = round(p - float(prev_champ.get(name, p)), 5)
+        prev = prev_champ.get(name, None)
+        t["p_champ_prev"] = prev if prev is not None else p
+        t["p_champ_delta"] = round(p - prev, 5) if prev is not None else 0.0
+
+# Guardar snapshot actual para la próxima simulación
+state["p_champ_snapshot"] = {t["team"]: float(mc.loc[t["team"]]["p_champ"])
+                              for t in teams if t["team"] in mc.index}
+state_file.write_text(json.dumps(state, indent=2, ensure_ascii=False))
 
 new_json = json.dumps(teams, ensure_ascii=False)
 html_out = re.sub(r"const teams = \[.*?\];", f"const teams = {new_json};",
