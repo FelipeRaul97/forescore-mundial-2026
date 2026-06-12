@@ -62,8 +62,21 @@ for mt in matches:
         b_h = beta.get(h_en, 0) + beta_adj.get(h_en, 0)
         a_a = alpha.get(a_en, 0) + alpha_adj.get(a_en, 0)
         b_a = beta.get(a_en, 0) + beta_adj.get(a_en, 0)
-        mt["lambda_h"] = float(np.exp(a_h - b_a))
-        mt["lambda_a"] = float(np.exp(a_a - b_h))
+        lh = float(np.exp(a_h - b_a))
+        la = float(np.exp(a_a - b_h))
+        mt["lambda_h"] = lh
+        mt["lambda_a"] = la
+        # Recalcular top-5 marcadores con lambdas ajustados
+        from math import exp, factorial
+        def pois(l, k): return exp(-l) * (l**k) / factorial(min(k, 7))
+        score_probs = {}
+        for gh in range(8):
+            for ga in range(8):
+                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga)
+        top5 = sorted(score_probs.items(), key=lambda x: -x[1])[:5]
+        for i, (sc, pr) in enumerate(top5, 1):
+            mt[f"score_{i}"] = sc
+            mt[f"prob_{i}"]  = pr
 
 # Reemplazar array matches
 new_json = json.dumps(matches, ensure_ascii=False)
