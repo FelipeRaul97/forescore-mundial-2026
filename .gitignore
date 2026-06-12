@@ -7,3 +7,6 @@ live_state.json
 .vscode/
 .idea/
 .DS_Store
+
+temp_*.txt
+mc_test.csv
