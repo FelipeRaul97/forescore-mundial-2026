@@ -876,8 +876,25 @@ function renderKnockout() {
     return top || { name: '—', p: 0, confirmed: false };
   }
 
+  // Dedup set: each T: slot must show a different team
+  const usedT = new Set();
+
   // Render a slot from a qualifier slot key (R32 entries)
   function sKey(key) {
+    if (key.startsWith('T:')) {
+      // Check if confirmed qualifier exists for this slot
+      if (typeof qualifiers !== 'undefined' && qualifiers[key]) {
+        return `<div class="bk2-slot ok"><span class="bk2-sn">${qualifiers[key]}</span><span class="bk2-sp">✓</span></div>`;
+      }
+      const grp = key.split(':')[1];
+      const cands = teams
+        .filter(t => grp.includes(t.group) && !usedT.has(t.team_es))
+        .sort((a,b) => b.p_3rd - a.p_3rd);
+      const t = cands[0];
+      if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">3º</span><span class="bk2-sp"></span></div>`;
+      usedT.add(t.team_es);
+      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es} (3º)</span><span class="bk2-sp">${(t.p_3rd*100).toFixed(0)}%</span></div>`;
+    }
     const t = projectedTeamForSlot(key);
     const ok = t.confirmed;
     const ps = ok ? '✓' : (t.p != null ? (t.p*100).toFixed(0)+'%' : '');
