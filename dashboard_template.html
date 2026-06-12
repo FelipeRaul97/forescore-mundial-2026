@@ -510,7 +510,7 @@ function renderCalibration() {
       <tbody>${rows.join('')}</tbody>
       <tfoot style="border-top:2px solid var(--ink);">
         <tr>
-          <td colspan="2" style="font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;color:var(--muted);">Totales (${played.length} partidos)</td>
+          <td colspan="3" style="font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;color:var(--muted);">Totales (${played.length} partidos)</td>
           <td>${totalPredH.toFixed(2)}</td><td>${totalRealH}</td>
           <td style="color:${totalRealH>totalPredH?'#4a6b3e':'#c8331e'}">${totalRealH>totalPredH?'+':''}${(totalRealH-totalPredH).toFixed(2)}</td>
           <td>${totalPredA.toFixed(2)}</td><td>${totalRealA}</td>
