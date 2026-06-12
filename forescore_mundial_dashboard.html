@@ -61,7 +61,7 @@
   .winner-panel .kicker-inv { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--gold); margin-bottom: 12px; }
   .winner-name { font-family: 'Fraunces', serif; font-style: italic; font-size: 56px; line-height: 0.95; margin-bottom: 18px; }
   .winner-prob { font-family: 'JetBrains Mono', monospace; font-size: 72px; font-weight: 700; line-height: 1; color: var(--accent); letter-spacing: -0.04em; }
-  .winner-prob span { font-size: 32px; vertical-align: top; }
+  .winner-prob span { font-size: 52px; vertical-align: top; }
   .winner-ci { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gold); margin-top: 8px; }
   .winner-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--paper-dark); margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(244,237,226,0.2); }
   
@@ -154,6 +154,63 @@
   .calib-table th:first-child { text-align:left; }
   .calib-table td { padding:10px 6px;border-bottom:1px solid rgba(42,37,30,0.1);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right; }
   .calib-table td:first-child { font-family:'Fraunces',serif;font-size:15px;font-weight:500;text-align:left; }
+
+  /* FIFA-style bracket (bk2) */
+  .bk2-root { display:flex; overflow-x:auto; font-family:'JetBrains Mono',monospace; padding:4px 0; align-items:center; }
+  /* Each round column: fixed slot height doubles per round */
+  .bk2-col { display:flex; flex-direction:column; overflow:visible; }
+  .bk2-r32 { --sh:38px; }
+  .bk2-r16 { --sh:76px; }
+  .bk2-qf  { --sh:152px; }
+  .bk2-sf  { --sh:304px; }
+  /* Each bracket pair = 2 team slots, draws bracket arm via ::before */
+  .bk2-pair { display:flex; flex-direction:column; position:relative; overflow:visible; }
+  /* Bracket arm: right side U-shape connecting slot1 center to slot2 center */
+  .bk2-pair::before {
+    content:''; position:absolute; right:0;
+    top:calc(var(--sh,38px) / 2);
+    height:var(--sh,38px);
+    width:14px;
+    border-top:1px solid rgba(42,37,30,0.28);
+    border-bottom:1px solid rgba(42,37,30,0.28);
+    border-right:1px solid rgba(42,37,30,0.28);
+  }
+  /* Connector from bracket arm midpoint to next column */
+  .bk2-pair::after {
+    content:''; position:absolute;
+    top:var(--sh,38px);
+    right:-14px;
+    width:14px; height:1px;
+    background:rgba(42,37,30,0.28);
+    transform:translateY(-0.5px);
+  }
+  /* Right-half mirror: arms point LEFT */
+  .bk2-r .bk2-pair::before { right:auto; left:0; border-right:none; border-left:1px solid rgba(42,37,30,0.28); }
+  .bk2-r .bk2-pair::after  { right:auto; left:-14px; }
+  /* Team slot */
+  .bk2-slot {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 8px; height:var(--sh,38px);
+    background:var(--paper);
+    border:1px solid rgba(42,37,30,0.2); border-bottom:none;
+    width:160px; overflow:hidden; box-sizing:border-box;
+  }
+  .bk2-slot:last-child { border-bottom:1px solid rgba(42,37,30,0.2); }
+  .bk2-sn { font-family:'Fraunces',serif; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
+  .bk2-sp { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; margin-left:4px; }
+  .bk2-slot.ok .bk2-sn { color:#4a6b3e; font-weight:700; }
+  .bk2-slot.ok .bk2-sp { color:#4a6b3e; }
+  .bk2-slot.ph { background:rgba(255,255,255,0.2); border-style:dashed; }
+  .bk2-slot.ph .bk2-sn { color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:10px; font-style:italic; }
+  /* Horizontal stub from slot edge to bracket arm */
+  .bk2-slot::after { content:''; position:absolute; top:50%; right:0; width:14px; height:1px; background:rgba(42,37,30,0.28); transform:translateY(-0.5px); pointer-events:none; }
+  .bk2-r .bk2-slot::after { right:auto; left:0; }
+  /* Final box */
+  .bk2-fin-wrap { display:flex; align-items:center; padding:0 8px; }
+  .bk2-fin { border:2px solid var(--ink); background:var(--ink); padding:14px 10px; min-width:96px; }
+  .bk2-fin-lbl { font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:0.2em; color:var(--gold); text-align:center; margin-bottom:8px; }
+  .bk2-fin-slot { font-family:'Fraunces',serif; font-style:italic; font-size:13px; color:rgba(244,237,226,0.65); padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.1); text-align:center; }
+  .bk2-fin-slot:last-child { border-bottom:none; }
 </style>
 </head>
 <body>
@@ -796,19 +853,147 @@ function teamLine(t) {
 }
 
 function renderKnockout() {
-  const matchOrder = Object.keys(KO_R32).map(Number).sort((a,b)=>a-b);
-  const cards = matchOrder.map(m => {
-    const a = projectedTeamForSlot(KO_R32[m][0]);
-    const b = projectedTeamForSlot(KO_R32[m][1]);
-    return `<div style="background: var(--paper); border: 1px solid var(--rule); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--muted);">MATCH ${m} · R32</div>
-      ${teamLine(a)}
-      <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-align: center;">vs</div>
-      ${teamLine(b)}
+  // R32 slot keys per match
+  const M = {
+    73:['R:A','R:B'],     74:['W:E','T:ABCDF'],  75:['W:F','R:C'],    76:['W:C','R:F'],
+    77:['W:I','T:CDFGH'], 78:['R:E','R:I'],       79:['W:A','T:CEFHI'],80:['W:L','T:EHIJK'],
+    81:['W:D','T:BEFIJ'], 82:['W:G','T:AEHIJ'],   83:['R:K','R:L'],    84:['W:H','R:J'],
+    85:['W:B','T:EFGIJ'], 86:['W:J','R:H'],        87:['W:K','T:DEIJL'],88:['R:D','R:G']
+  };
+  const cat = (...a) => [].concat(...a);
+
+  // Given a set of R32 slot keys, return the team with highest pKey probability
+  function best(slotKeys, pKey) {
+    let top = null, topP = -1;
+    for (const k of slotKeys) {
+      const t = projectedTeamForSlot(k);
+      if (!t || !t.name) continue;
+      const td = teams.find(x => x.team_es === t.name);
+      if (!td) continue;
+      const p = td[pKey] || 0;
+      if (p > topP) { topP = p; top = { name: t.name, p, confirmed: t.confirmed }; }
+    }
+    return top || { name: '—', p: 0, confirmed: false };
+  }
+
+  // Render a slot from a qualifier slot key (R32 entries)
+  function sKey(key) {
+    const t = projectedTeamForSlot(key);
+    const ok = t.confirmed;
+    const ps = ok ? '✓' : (t.p != null ? (t.p*100).toFixed(0)+'%' : '');
+    return `<div class="bk2-slot ${ok?'ok':''}"><span class="bk2-sn">${t.name}</span><span class="bk2-sp">${ps}</span></div>`;
+  }
+
+  // Render a projected slot for R16+ using model probabilities
+  function sProj(slotKeys, pKey) {
+    const t = best(slotKeys, pKey);
+    const ok = t.confirmed;
+    const ph = t.name === '—';
+    const ps = ok ? '✓' : (t.p > 0.001 ? (t.p*100).toFixed(0)+'%' : '');
+    return `<div class="bk2-slot ${ok?'ok':''} ${ph?'ph':''}"><span class="bk2-sn">${t.name}</span><span class="bk2-sp">${ps}</span></div>`;
+  }
+
+  function pr(a, b) { return `<div class="bk2-pair">${a}${b}</div>`; }
+  function col(cls, pairs) { return `<div class="bk2-col ${cls}">${pairs.join('')}</div>`; }
+
+  // ── Slot key groups per bracket position ────────────────────────────────
+  // R16 feeder sides (each arm = one R32 match's slots)
+  const r89a=M[74], r89b=M[77];   const r90a=M[73], r90b=M[75];
+  const r93a=M[83], r93b=M[84];   const r94a=M[81], r94b=M[82];
+  const r91a=M[76], r91b=M[78];   const r92a=M[79], r92b=M[80];
+  const r95a=M[86], r95b=M[88];   const r96a=M[85], r96b=M[87];
+
+  // QF feeder sides (each arm = one R16 match's full pool)
+  const q97a=cat(r89a,r89b), q97b=cat(r90a,r90b);
+  const q98a=cat(r93a,r93b), q98b=cat(r94a,r94b);
+  const q99a=cat(r91a,r91b), q99b=cat(r92a,r92b);
+  const q100a=cat(r95a,r95b), q100b=cat(r96a,r96b);
+
+  // SF feeder sides (each arm = one QF match's full pool)
+  const s101a=cat(q97a,q97b), s101b=cat(q98a,q98b);
+  const s102a=cat(q99a,q99b), s102b=cat(q100a,q100b);
+
+  // Final
+  const fa=cat(s101a,s101b), fb=cat(s102a,s102b);
+
+  // ── Build columns ────────────────────────────────────────────────────────
+  const LR32 = col('bk2-r32', [
+    pr(sKey('W:E'),    sKey('T:ABCDF')), // M74
+    pr(sKey('W:I'),    sKey('T:CDFGH')), // M77
+    pr(sKey('R:A'),    sKey('R:B')),     // M73
+    pr(sKey('W:F'),    sKey('R:C')),     // M75
+    pr(sKey('R:K'),    sKey('R:L')),     // M83
+    pr(sKey('W:H'),    sKey('R:J')),     // M84
+    pr(sKey('W:D'),    sKey('T:BEFIJ')), // M81
+    pr(sKey('W:G'),    sKey('T:AEHIJ')), // M82
+  ]);
+
+  const LR16 = col('bk2-r16', [
+    pr(sProj(r89a,'p_r16'), sProj(r89b,'p_r16')), // R16-89: M74 winner vs M77 winner
+    pr(sProj(r90a,'p_r16'), sProj(r90b,'p_r16')), // R16-90: M73 vs M75
+    pr(sProj(r93a,'p_r16'), sProj(r93b,'p_r16')), // R16-93: M83 vs M84
+    pr(sProj(r94a,'p_r16'), sProj(r94b,'p_r16')), // R16-94: M81 vs M82
+  ]);
+
+  const LQF = col('bk2-qf', [
+    pr(sProj(q97a,'p_qf'), sProj(q97b,'p_qf')), // QF-97
+    pr(sProj(q98a,'p_qf'), sProj(q98b,'p_qf')), // QF-98
+  ]);
+
+  const LSF = col('bk2-sf', [
+    pr(sProj(s101a,'p_sf'), sProj(s101b,'p_sf')), // SF-101
+  ]);
+
+  const RSF = col('bk2-sf bk2-r', [
+    pr(sProj(s102a,'p_sf'), sProj(s102b,'p_sf')), // SF-102
+  ]);
+
+  const RQF = col('bk2-qf bk2-r', [
+    pr(sProj(q99a,'p_qf'),  sProj(q99b,'p_qf')),   // QF-99
+    pr(sProj(q100a,'p_qf'), sProj(q100b,'p_qf')),  // QF-100
+  ]);
+
+  const RR16 = col('bk2-r16 bk2-r', [
+    pr(sProj(r91a,'p_r16'), sProj(r91b,'p_r16')), // R16-91: M76 vs M78
+    pr(sProj(r92a,'p_r16'), sProj(r92b,'p_r16')), // R16-92: M79 vs M80
+    pr(sProj(r95a,'p_r16'), sProj(r95b,'p_r16')), // R16-95: M86 vs M88
+    pr(sProj(r96a,'p_r16'), sProj(r96b,'p_r16')), // R16-96: M85 vs M87
+  ]);
+
+  const RR32 = col('bk2-r32 bk2-r', [
+    pr(sKey('W:C'),    sKey('R:F')),     // M76
+    pr(sKey('R:E'),    sKey('R:I')),     // M78
+    pr(sKey('W:A'),    sKey('T:CEFHI')),// M79
+    pr(sKey('W:L'),    sKey('T:EHIJK')),// M80
+    pr(sKey('W:J'),    sKey('R:H')),     // M86
+    pr(sKey('R:D'),    sKey('R:G')),     // M88
+    pr(sKey('W:B'),    sKey('T:EFGIJ')),// M85
+    pr(sKey('W:K'),    sKey('T:DEIJL')),// M87
+  ]);
+
+  const G = `<div style="width:14px;flex-shrink:0;"></div>`;
+  const H = (t,c) => `<div style="width:160px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:${c||'var(--muted)'};">${t}</div>`;
+  const GH = `<div style="width:14px;"></div>`;
+
+  const finA = best(fa,'p_final'), finB = best(fb,'p_final');
+
+  document.getElementById('knockoutBracket').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:6px;">
+      ${H('R32')}${GH}${H('Octavos')}${GH}${H('Cuartos')}${GH}${H('Semis')}${GH}
+      <div style="width:112px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);">Final</div>
+      ${GH}${H('Semis')}${GH}${H('Cuartos')}${GH}${H('Octavos')}${GH}${H('R32')}
+    </div>
+    <div class="bk2-root">
+      ${LR32}${G}${LR16}${G}${LQF}${G}${LSF}
+      <div class="bk2-fin-wrap">
+        <div class="bk2-fin">
+          <div class="bk2-fin-lbl">Final</div>
+          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finA.p>0?(finA.p*100).toFixed(0)+'%':''}</span></div>
+          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finB.p>0?(finB.p*100).toFixed(0)+'%':''}</span></div>
+        </div>
+      </div>
+      ${RSF}${G}${RQF}${G}${RR16}${G}${RR32}
     </div>`;
-  }).join('');
-  document.getElementById('knockoutBracket').innerHTML =
-    `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">${cards}</div>`;
 }
 
 renderLeaderboard();
