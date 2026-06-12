@@ -726,11 +726,10 @@ function renderMatches() {
     // Si hay resultado real, asegurarse de que aparece siempre y el total sea máximo 5
     let displayScores = scores.slice();
     let displayProbs  = probs.slice();
-    let actualIdx = -1;
+    let actualScore = null;
     if (m.played) {
-      const actualScore = `${m.score_h}-${m.score_a}`;
-      actualIdx = displayScores.indexOf(actualScore);
-      if (actualIdx === -1) {
+      actualScore = `${m.score_h}-${m.score_a}`;
+      if (!displayScores.includes(actualScore)) {
         // Resultado no está en top-5: reemplazar el de menor prob con el resultado real
         const lh = lambdaH, la = lambdaA;
         const pois = (l, k) => Math.exp(-l) * Math.pow(l, k) / [1,1,2,6,24,120][Math.min(k,5)];
@@ -738,8 +737,11 @@ function renderMatches() {
         const minIdx = displayProbs.indexOf(Math.min(...displayProbs));
         displayScores[minIdx] = actualScore;
         displayProbs[minIdx]  = actualProb;
-        actualIdx = minIdx;
       }
+      // Ordenar de mayor a menor probabilidad
+      const pairs = displayScores.map((s,i) => [s, displayProbs[i]]).sort((a,b) => b[1]-a[1]);
+      displayScores = pairs.map(p => p[0]);
+      displayProbs  = pairs.map(p => p[1]);
     }
     const heatmapBtn = !m.played ? `<div style="margin-top:8px;">
   <button onclick="toggleHeatmap(this, ${JSON.stringify(m).replace(/"/g,'&quot;')})" style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;background:none;border:1px solid var(--rule);padding:4px 8px;cursor:pointer;color:var(--muted);">Heatmap ▾</button>
@@ -747,11 +749,11 @@ function renderMatches() {
 </div>` : '';
     const scoresSection = `<div><div class="match-scores" style="${m.played?'flex-wrap:wrap;':''}">
       ${displayScores.map((s,i) => {
-        const isActual = m.played && i === actualIdx;
+        const isActual = m.played && s === actualScore;
         const isTop = displayProbs[i] === Math.max(...displayProbs) && !m.played;
         const style = isActual ? 'border:2px solid #4a6b3e;background:rgba(74,107,62,0.12);' : '';
         const textStyle = isActual ? 'color:#4a6b3e;' : '';
-        return `<div class="score-cell ${isTop?'top':''}" style="${isActual?style:''};order:${isActual?-1:0};">
+        return `<div class="score-cell ${isTop?'top':''}" style="${style}">
           <div class="score" style="${textStyle}">${s}</div>
           <div class="score-prob" style="${textStyle}">${(displayProbs[i]*100).toFixed(0)}%</div>
         </div>`;
