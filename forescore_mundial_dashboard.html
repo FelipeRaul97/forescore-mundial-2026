@@ -928,13 +928,21 @@ function renderKnockout() {
     return `<div class="bk2-slot"><span class="bk2-sn">${d.name}</span><span class="bk2-sp">${(d.p_r16*100).toFixed(0)}%</span></div>`;
   }
 
-  // Render a projected slot for R16+ using model probabilities
-  function sProj(slotKeys, pKey) {
-    const t = best(slotKeys, pKey);
+  // Render a single projected slot given a pre-resolved team object {name, p, confirmed}
+  function slotHtml(t, normP) {
     const ok = t.confirmed;
     const ph = t.name === '—';
-    const ps = ok ? '✓' : (t.p > 0.001 ? (t.p*100).toFixed(0)+'%' : '');
+    const dp = normP > 0 ? t.p / normP : t.p;
+    const ps = ok ? '✓' : (dp > 0.001 ? (dp*100).toFixed(0)+'%' : '');
     return `<div class="bk2-slot ${ok?'ok':''} ${ph?'ph':''}"><span class="bk2-sn">${t.name}</span><span class="bk2-sp">${ps}</span></div>`;
+  }
+
+  // Render a pair of R16+ slots — percentages normalized so the two teams sum to 100%
+  function prNorm(keysA, keysB, pKey) {
+    const tA = best(keysA, pKey);
+    const tB = best(keysB, pKey);
+    const total = tA.p + tB.p;
+    return pr(slotHtml(tA, total), slotHtml(tB, total));
   }
 
   function pr(a, b) { return `<div class="bk2-pair">${a}${b}</div>`; }
@@ -973,35 +981,35 @@ function renderKnockout() {
   ]);
 
   const LR16 = col('bk2-r16', [
-    pr(sProj(r89a,'p_r16'), sProj(r89b,'p_r16')), // R16-89: M74 winner vs M77 winner
-    pr(sProj(r90a,'p_r16'), sProj(r90b,'p_r16')), // R16-90: M73 vs M75
-    pr(sProj(r93a,'p_r16'), sProj(r93b,'p_r16')), // R16-93: M83 vs M84
-    pr(sProj(r94a,'p_r16'), sProj(r94b,'p_r16')), // R16-94: M81 vs M82
+    prNorm(r89a, r89b, 'p_qf'), // R16-89
+    prNorm(r90a, r90b, 'p_qf'), // R16-90
+    prNorm(r93a, r93b, 'p_qf'), // R16-93
+    prNorm(r94a, r94b, 'p_qf'), // R16-94
   ]);
 
   const LQF = col('bk2-qf', [
-    pr(sProj(q97a,'p_qf'), sProj(q97b,'p_qf')), // QF-97
-    pr(sProj(q98a,'p_qf'), sProj(q98b,'p_qf')), // QF-98
+    prNorm(q97a, q97b, 'p_sf'), // QF-97
+    prNorm(q98a, q98b, 'p_sf'), // QF-98
   ]);
 
   const LSF = col('bk2-sf', [
-    pr(sProj(s101a,'p_sf'), sProj(s101b,'p_sf')), // SF-101
+    prNorm(s101a, s101b, 'p_final'), // SF-101
   ]);
 
   const RSF = col('bk2-sf bk2-r', [
-    pr(sProj(s102a,'p_sf'), sProj(s102b,'p_sf')), // SF-102
+    prNorm(s102a, s102b, 'p_final'), // SF-102
   ]);
 
   const RQF = col('bk2-qf bk2-r', [
-    pr(sProj(q99a,'p_qf'),  sProj(q99b,'p_qf')),   // QF-99
-    pr(sProj(q100a,'p_qf'), sProj(q100b,'p_qf')),  // QF-100
+    prNorm(q99a,  q99b,  'p_sf'), // QF-99
+    prNorm(q100a, q100b, 'p_sf'), // QF-100
   ]);
 
   const RR16 = col('bk2-r16 bk2-r', [
-    pr(sProj(r91a,'p_r16'), sProj(r91b,'p_r16')), // R16-91: M76 vs M78
-    pr(sProj(r92a,'p_r16'), sProj(r92b,'p_r16')), // R16-92: M79 vs M80
-    pr(sProj(r95a,'p_r16'), sProj(r95b,'p_r16')), // R16-95: M86 vs M88
-    pr(sProj(r96a,'p_r16'), sProj(r96b,'p_r16')), // R16-96: M85 vs M87
+    prNorm(r91a, r91b, 'p_qf'), // R16-91
+    prNorm(r92a, r92b, 'p_qf'), // R16-92
+    prNorm(r95a, r95b, 'p_qf'), // R16-95
+    prNorm(r96a, r96b, 'p_qf'), // R16-96
   ]);
 
   const RR32 = col('bk2-r32 bk2-r', [
@@ -1019,7 +1027,8 @@ function renderKnockout() {
   const H = (t,c) => `<div style="width:160px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:${c||'var(--muted)'};">${t}</div>`;
   const GH = `<div style="width:14px;"></div>`;
 
-  const finA = best(fa,'p_final'), finB = best(fb,'p_final');
+  const finA = best(fa,'p_champ'), finB = best(fb,'p_champ');
+  const finTotal = finA.p + finB.p;
 
   document.getElementById('knockoutBracket').innerHTML = `
     <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:6px;">
@@ -1032,8 +1041,8 @@ function renderKnockout() {
       <div class="bk2-fin-wrap">
         <div class="bk2-fin">
           <div class="bk2-fin-lbl">Final</div>
-          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finA.p>0?(finA.p*100).toFixed(0)+'%':''}</span></div>
-          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finB.p>0?(finB.p*100).toFixed(0)+'%':''}</span></div>
+          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finA.p/finTotal*100).toFixed(0)+'%':''}</span></div>
+          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finB.p/finTotal*100).toFixed(0)+'%':''}</span></div>
         </div>
       </div>
       ${RSF}${G}${RQF}${G}${RR16}${G}${RR32}
