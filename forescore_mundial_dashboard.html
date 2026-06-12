@@ -862,20 +862,6 @@ function renderKnockout() {
   };
   const cat = (...a) => [].concat(...a);
 
-  // Given a set of R32 slot keys, return the team with highest pKey probability
-  function best(slotKeys, pKey) {
-    let top = null, topP = -1;
-    for (const k of slotKeys) {
-      const t = projectedTeamForSlot(k);
-      if (!t || !t.name) continue;
-      const td = teams.find(x => x.team_es === t.name);
-      if (!td) continue;
-      const p = td[pKey] || 0;
-      if (p > topP) { topP = p; top = { name: t.name, p, confirmed: t.confirmed }; }
-    }
-    return top || { name: '—', p: 0, confirmed: false };
-  }
-
   // Pre-computar el ganador proyectado de cada grupo (para que R:X lo excluya)
   const groupWinner = {};
   for (const g of 'ABCDEFGHIJKL'.split('')) {
@@ -886,33 +872,59 @@ function renderKnockout() {
       if (top) groupWinner[g] = top.team_es;
     }
   }
-  const usedT = new Set(); // dedup para slots T:
 
-  function sKey(key) {
-    // Clasificado confirmado
-    if (typeof qualifiers !== 'undefined' && qualifiers[key])
-      return `<div class="bk2-slot ok"><span class="bk2-sn">${qualifiers[key]}</span><span class="bk2-sp">✓</span></div>`;
-
+  // Pre-computar TODOS los slots R32 en orden del bracket (T: dedup depende del orden)
+  const R32_ORDER = [
+    'W:E','T:ABCDF','W:I','T:CDFGH','R:A','R:B','W:F','R:C',
+    'R:K','R:L','W:H','R:J','W:D','T:BEFIJ','W:G','T:AEHIJ',
+    'W:C','R:F','R:E','R:I','W:A','T:CEFHI','W:L','T:EHIJK',
+    'W:J','R:H','R:D','R:G','W:B','T:EFGIJ','W:K','T:DEIJL'
+  ];
+  const usedT = new Set();
+  const ST = {}; // slot -> {name, p_r16, confirmed}
+  for (const key of R32_ORDER) {
+    if (typeof qualifiers !== 'undefined' && qualifiers[key]) {
+      ST[key] = {name: qualifiers[key], p_r16: 1.0, confirmed: true};
+      continue;
+    }
     const [typ, grp] = key.split(':');
-
     if (typ === 'W') {
       const t = [...teams.filter(x=>x.group===grp)].sort((a,b)=>b.p_1st-a.p_1st)[0];
-      if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">1º ${grp}</span><span class="bk2-sp"></span></div>`;
-      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
-    }
-
-    if (typ === 'R') {
-      const exc = groupWinner[grp]; // excluir el 1º proyectado
+      ST[key] = t ? {name: t.team_es, p_r16: t.p_r16} : {name:'?', p_r16:0};
+    } else if (typ === 'R') {
+      const exc = groupWinner[grp];
       const t = [...teams.filter(x=>x.group===grp && x.team_es!==exc)].sort((a,b)=>b.p_2nd-a.p_2nd)[0];
-      if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">2º ${grp}</span><span class="bk2-sp"></span></div>`;
-      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
+      ST[key] = t ? {name: t.team_es, p_r16: t.p_r16} : {name:'?', p_r16:0};
+    } else {
+      const t = [...teams.filter(x=>grp.includes(x.group) && !usedT.has(x.team_es))].sort((a,b)=>b.p_3rd-a.p_3rd)[0];
+      if (t) usedT.add(t.team_es);
+      ST[key] = t ? {name: t.team_es+'  (3º)', p_r16: t.p_r16} : {name:'?', p_r16:0};
     }
+  }
 
-    // T: slot — dedup global
-    const t = [...teams.filter(x=>grp.includes(x.group) && !usedT.has(x.team_es))].sort((a,b)=>b.p_3rd-a.p_3rd)[0];
-    if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">3º</span><span class="bk2-sp"></span></div>`;
-    usedT.add(t.team_es);
-    return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es} (3º)</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
+  // best(): elige el equipo con mayor pKey de entre los slots dados, usando ST
+  function best(slotKeys, pKey) {
+    let top = null, topP = -1;
+    for (const k of slotKeys) {
+      const d = ST[k]; if (!d || d.name==='?') continue;
+      const nm = d.name.replace(/\s*\(3º\)$/, '');
+      const td = teams.find(x => x.team_es === nm);
+      if (!td) continue;
+      const p = td[pKey] || 0;
+      if (p > topP) { topP = p; top = {name: nm, p, confirmed: d.confirmed||false}; }
+    }
+    return top || {name:'—', p:0, confirmed:false};
+  }
+
+  function sKey(key) {
+    if (typeof qualifiers !== 'undefined' && qualifiers[key])
+      return `<div class="bk2-slot ok"><span class="bk2-sn">${qualifiers[key]}</span><span class="bk2-sp">✓</span></div>`;
+    const d = ST[key];
+    if (!d || d.name==='?') {
+      const lbl = key.startsWith('W:') ? '1º '+key.slice(2) : key.startsWith('R:') ? '2º '+key.slice(2) : '3º';
+      return `<div class="bk2-slot ph"><span class="bk2-sn">${lbl}</span><span class="bk2-sp"></span></div>`;
+    }
+    return `<div class="bk2-slot"><span class="bk2-sn">${d.name}</span><span class="bk2-sp">${(d.p_r16*100).toFixed(0)}%</span></div>`;
   }
 
   // Render a projected slot for R16+ using model probabilities
