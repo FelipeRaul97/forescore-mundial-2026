@@ -894,21 +894,21 @@ function renderKnockout() {
     if (typ === 'W') {
       const t = [...teams.filter(x=>x.group===grp)].sort((a,b)=>b.p_1st-a.p_1st)[0];
       if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">1º ${grp}</span><span class="bk2-sp"></span></div>`;
-      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_1st*100).toFixed(0)}%</span></div>`;
+      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
     }
 
     if (typ === 'R') {
       const exc = groupWinner[grp]; // excluir el 1º proyectado
       const t = [...teams.filter(x=>x.group===grp && x.team_es!==exc)].sort((a,b)=>b.p_2nd-a.p_2nd)[0];
       if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">2º ${grp}</span><span class="bk2-sp"></span></div>`;
-      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_2nd*100).toFixed(0)}%</span></div>`;
+      return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es}</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
     }
 
     // T: slot — dedup global
     const t = [...teams.filter(x=>grp.includes(x.group) && !usedT.has(x.team_es))].sort((a,b)=>b.p_3rd-a.p_3rd)[0];
     if (!t) return `<div class="bk2-slot ph"><span class="bk2-sn">3º</span><span class="bk2-sp"></span></div>`;
     usedT.add(t.team_es);
-    return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es} (3º)</span><span class="bk2-sp">${(t.p_3rd*100).toFixed(0)}%</span></div>`;
+    return `<div class="bk2-slot"><span class="bk2-sn">${t.team_es} (3º)</span><span class="bk2-sp">${(t.p_r16*100).toFixed(0)}%</span></div>`;
   }
 
   // Render a projected slot for R16+ using model probabilities
