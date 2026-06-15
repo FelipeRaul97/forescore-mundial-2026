@@ -487,7 +487,7 @@ function renderThirds() {
             <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">${(t.avg_points||0).toFixed(1)}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rd>0?'+':''}${rd}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rf}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:${t.p_3rd>0.3?'700':'400'};color:${t.p_3rd>0.3?'var(--accent)':'inherit'};">${(t.p_3rd*100).toFixed(0)}%</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:${t.p_3rd>0.3?'700':'400'};color:${t.p_3rd>0.3?'var(--accent)':'inherit'};">${(t.p_3rd*100).toFixed(1)}%</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -616,9 +616,9 @@ function renderLeaderboard() {
     <div class="winner-ci">Intervalo 95%: ${((top.p_champ_lo||0)*100).toFixed(1)}% – ${((top.p_champ_hi||0)*100).toFixed(1)}%</div>
     <div class="winner-meta">
       Grupo ${top.group}<br>
-      Pasa: ${(top.p_advance*100).toFixed(0)}%<br>
-      Llega a semis: ${(top.p_sf*100).toFixed(0)}%<br>
-      Llega a final: ${(top.p_final*100).toFixed(0)}%${penLine}
+      Pasa: ${(top.p_advance*100).toFixed(1)}%<br>
+      Llega a semis: ${(top.p_sf*100).toFixed(1)}%<br>
+      Llega a final: ${(top.p_final*100).toFixed(1)}%${penLine}
     </div>`;
 
   document.getElementById('leaderList').innerHTML = sorted.map((t,i) => `
@@ -627,7 +627,7 @@ function renderLeaderboard() {
       <div>
         <div class="team-name">${t.team_es}</div>
         ${(()=>{const d=t.p_champ_delta||0;const abs=(d*100).toFixed(1);return d>0.0005?`<div class="team-group delta-up">▲ +${abs}pp desde última sim</div>`:d<-0.0005?`<div class="team-group delta-dn">▼ ${abs}pp desde última sim</div>`:'';})()}
-        <div class="team-group">Grupo ${t.group} · Pasa ${(t.p_advance*100).toFixed(0)}% · SF ${(t.p_sf*100).toFixed(0)}%</div>
+        <div class="team-group">Grupo ${t.group} · Pasa ${(t.p_advance*100).toFixed(1)}% · SF ${(t.p_sf*100).toFixed(1)}%</div>
       </div>
       <div>${ciStrip(t.p_champ, t.p_champ_lo || t.p_champ*0.5, t.p_champ_hi || t.p_champ*1.5, maxHi)}</div>
     </div>`).join('');
@@ -672,8 +672,8 @@ function renderGroups() {
           <td class="gt-pts ${i===0?'top':''}">${(t.avg_points||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gd||0)>0?'+':''}${(t.avg_gd||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gf||0).toFixed(1)}</td>
-          <td class="gt-prob ${t.p_1st>0.5?'high':''}">${(t.p_1st*100).toFixed(0)}%</td>
-          <td class="gt-prob ${t.p_advance>0.85?'high':''}">${(t.p_advance*100).toFixed(0)}%</td>
+          <td class="gt-prob ${t.p_1st>0.5?'high':''}">${(t.p_1st*100).toFixed(1)}%</td>
+          <td class="gt-prob ${t.p_advance>0.85?'high':''}">${(t.p_advance*100).toFixed(1)}%</td>
         </tr>`;}).join('');
         })()}
         </tbody>
@@ -755,7 +755,7 @@ function renderMatches() {
         const textStyle = isActual ? 'color:#4a6b3e;' : '';
         return `<div class="score-cell ${isTop?'top':''}" style="${style}">
           <div class="score" style="${textStyle}">${s}</div>
-          <div class="score-prob" style="${textStyle}">${(displayProbs[i]*100).toFixed(0)}%</div>
+          <div class="score-prob" style="${textStyle}">${(displayProbs[i]*100).toFixed(1)}%</div>
         </div>`;
       }).join('')}
     </div>${heatmapBtn}</div>`;
@@ -764,7 +764,7 @@ function renderMatches() {
       <div><div class="match-date">${m.date.substring(5)}</div></div>
       <div>
         <div class="match-teams">${m.home_es} <span style="color:var(--muted); font-size:14px"> vs </span> ${m.away_es}</div>
-        <div class="match-meta">${m.city} · λ ${lambdaH.toFixed(2)}–${lambdaA.toFixed(2)} · Top-5 ${(cov*100).toFixed(0)}%</div>
+        <div class="match-meta">${m.city} · λ ${lambdaH.toFixed(2)}–${lambdaA.toFixed(2)} · Top-5 ${(cov*100).toFixed(1)}%</div>
       </div>
       ${scoresSection}
     </div>`;
@@ -845,9 +845,9 @@ function teamLine(t) {
   return `<div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;">
       <span style="font-family:'Fraunces',serif;font-size:15px;font-weight:500;">${t.name}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${(t.p*100).toFixed(0)}%</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${(t.p*100).toFixed(1)}%</span>
     </div>
-    ${t.alt?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;">o ${t.alt.name} (${(t.alt.p*100).toFixed(0)}%)</div>`:''}
+    ${t.alt?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;">o ${t.alt.name} (${(t.alt.p*100).toFixed(1)}%)</div>`:''}
   </div>`;
 }
 
@@ -923,7 +923,7 @@ function renderKnockout() {
       const lbl = key.startsWith('W:') ? '1º '+key.slice(2) : key.startsWith('R:') ? '2º '+key.slice(2) : '3º';
       return `<div class="bk2-slot ph"><span class="bk2-sn">${lbl}</span><span class="bk2-sp"></span></div>`;
     }
-    return `<div class="bk2-slot"><span class="bk2-sn">${d.name}</span><span class="bk2-sp">${(d.p_r16*100).toFixed(0)}%</span></div>`;
+    return `<div class="bk2-slot"><span class="bk2-sn">${d.name}</span><span class="bk2-sp">${(d.p_r16*100).toFixed(1)}%</span></div>`;
   }
 
   // Render a single projected slot given a pre-resolved team object {name, p, confirmed}
@@ -931,7 +931,7 @@ function renderKnockout() {
     const ok = t.confirmed;
     const ph = t.name === '—';
     const dp = normP > 0 ? t.p / normP : t.p;
-    const ps = ok ? '✓' : (dp > 0.001 ? (dp*100).toFixed(0)+'%' : '');
+    const ps = ok ? '✓' : (dp > 0.001 ? (dp*100).toFixed(1)+'%' : '');
     return `<div class="bk2-slot ${ok?'ok':''} ${ph?'ph':''}"><span class="bk2-sn">${t.name}</span><span class="bk2-sp">${ps}</span></div>`;
   }
 
@@ -1039,8 +1039,8 @@ function renderKnockout() {
       <div class="bk2-fin-wrap">
         <div class="bk2-fin">
           <div class="bk2-fin-lbl">Final</div>
-          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finA.p/finTotal*100).toFixed(0)+'%':''}</span></div>
-          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finB.p/finTotal*100).toFixed(0)+'%':''}</span></div>
+          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finA.p/finTotal*100).toFixed(1)+'%':''}</span></div>
+          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finB.p/finTotal*100).toFixed(1)+'%':''}</span></div>
         </div>
       </div>
       ${RSF}${G}${RQF}${G}${RR16}${G}${RR32}
