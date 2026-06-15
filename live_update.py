@@ -58,6 +58,31 @@ def save_state(state):
     state["last_updated"] = datetime.now().isoformat()
     with open(STATE_FILE,"w") as f: json.dump(state, f, indent=2, ensure_ascii=False)
 
+def rebuild_adjs(state, base):
+    """Reconstruye alpha_adj y beta_adj desde cero leyendo todo el historial."""
+    adjs_a = {}
+    adjs_b = {}
+    for h in state["history"]:
+        home, away = h["home"], h["away"]
+        sh, sa = map(int, h["score"].split("-"))
+        lh_pred = h["lh_pred"]
+        la_pred = h["la_pred"]
+        n_home = sum(1 for x in state["history"][:state["history"].index(h)]
+                     if x["home"]==home or x["away"]==home)
+        n_away = sum(1 for x in state["history"][:state["history"].index(h)]
+                     if x["home"]==away or x["away"]==away)
+        BW_home = min(0.30 + n_home * 0.05, 0.60)
+        BW_away = min(0.30 + n_away * 0.05, 0.60)
+        diff_h = np.log(max(sh, 0.3)) - np.log(lh_pred)
+        diff_a = np.log(max(sa, 0.3)) - np.log(la_pred)
+        adjs_a[home] = adjs_a.get(home, 0) + BW_home * diff_h / 2
+        adjs_b[away]  = adjs_b.get(away, 0)  - BW_home * diff_h / 2
+        adjs_a[away]  = adjs_a.get(away, 0)  + BW_away * diff_a / 2
+        adjs_b[home]  = adjs_b.get(home, 0)  - BW_away * diff_a / 2
+    state["alpha_adj"] = adjs_a
+    state["beta_adj"]  = adjs_b
+    return state
+
 def compute_lambdas(home, away, base, state, **kw):
     if home not in base["alpha"] or away not in base["alpha"]:
         return None, None, "Equipo no en modelo"
@@ -253,6 +278,10 @@ def rebuild(args):
 def resimulate(args):
     """Re-corre el Monte Carlo completo con los alpha/beta actuales
     (base + ajustes acumulados + anclaje Elo) y reescribe las P(campeon)/fases."""
+    # Siempre reconstruir ajustes desde historial para evitar estado corrupto
+    state = load_state(); base = load_base()
+    state = rebuild_adjs(state, base)
+    save_state(state)
     print(f"Re-anclando a Elo (w={args.elo_w})...")
     subprocess.run([sys.executable, str(WORKDIR/"elo_anchor.py"), "--w", str(args.elo_w)],
                    check=True)
