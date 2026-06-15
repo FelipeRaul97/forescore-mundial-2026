@@ -56,6 +56,18 @@ for mt in matches:
         mt["score_a"] = sa
         mt["lambda_h_pred"] = rec["lh_pred"]
         mt["lambda_a_pred"] = rec["la_pred"]
+        # Recalcular top-5 con los lambdas del momento del partido
+        from math import exp, factorial
+        def pois(l, k): return exp(-l) * (l**k) / factorial(min(k, 7))
+        lh, la = rec["lh_pred"], rec["la_pred"]
+        score_probs = {}
+        for gh in range(8):
+            for ga in range(8):
+                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga)
+        top5 = sorted(score_probs.items(), key=lambda x: -x[1])[:5]
+        for i, (sc, pr) in enumerate(top5, 1):
+            mt[f"score_{i}"] = sc
+            mt[f"prob_{i}"]  = pr
     else:
         mt["played"] = False
         a_h = alpha.get(h_en, 0) + alpha_adj.get(h_en, 0)
