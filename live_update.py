@@ -203,7 +203,7 @@ def update(args):
     save_state(state)
     print(f"\nUPDATE: {home} {sh}-{sa} {away}")
     print(f"lambdas predichas: {lh_pred:.2f} - {la_pred:.2f}")
-    print(f"\nAjustes Bayesianos aplicados (peso={BW}):")
+    print(f"\nAjustes Bayesianos aplicados (peso_local={BW_home:.2f}, peso_visit={BW_away:.2f}):")
     print(f"  alpha_{home}: {state['alpha_adj'][home]:+.3f}")
     print(f"  alpha_{away}: {state['alpha_adj'][away]:+.3f}")
     if newly_qualified:
