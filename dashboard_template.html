@@ -733,7 +733,9 @@ function renderMatches() {
         // Resultado no está en top-5: reemplazar el de menor prob con el resultado real
         const lh = lambdaH, la = lambdaA;
         const pois = (l, k) => Math.exp(-l) * Math.pow(l, k) / [1,1,2,6,24,120,720,5040,40320,362880][Math.min(k,9)];
-        const actualProb = pois(lh, m.score_h) * pois(la, m.score_a);
+        const rho = -0.092;
+        const dcTau = (h,a) => { if(h==0&&a==0) return 1-lh*la*rho; if(h==1&&a==0) return 1+la*rho; if(h==0&&a==1) return 1+lh*rho; if(h==1&&a==1) return 1-rho; return 1; };
+        const actualProb = pois(lh, m.score_h) * pois(la, m.score_a) * dcTau(m.score_h, m.score_a);
         const minIdx = displayProbs.indexOf(Math.min(...displayProbs));
         displayScores[minIdx] = actualScore;
         displayProbs[minIdx]  = actualProb;

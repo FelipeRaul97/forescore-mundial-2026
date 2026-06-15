@@ -16,6 +16,7 @@ dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv", encoding="utf-8")
 glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv", encoding="utf-8")
 alpha = dict(zip(dc["team"], dc["alpha"]))
 beta = dict(zip(dc["team"], dc["beta"]))
+RHO = float(glob["rho"].iloc[0])
 
 state_file = WORKDIR / "live_state.json"
 if state_file.exists():
@@ -56,14 +57,20 @@ for mt in matches:
         mt["score_a"] = sa
         mt["lambda_h_pred"] = rec["lh_pred"]
         mt["lambda_a_pred"] = rec["la_pred"]
-        # Recalcular top-5 con los lambdas del momento del partido
+        # Recalcular top-5 con los lambdas del momento del partido + corrección DC
         from math import exp, factorial
         def pois(l, k): return exp(-l) * (l**k) / factorial(min(k, 7))
+        def dc_tau(h, a, lh, la, rho):
+            if h==0 and a==0: return 1 - lh*la*rho
+            if h==1 and a==0: return 1 + la*rho
+            if h==0 and a==1: return 1 + lh*rho
+            if h==1 and a==1: return 1 - rho
+            return 1.0
         lh, la = rec["lh_pred"], rec["la_pred"]
         score_probs = {}
         for gh in range(8):
             for ga in range(8):
-                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga)
+                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga) * dc_tau(gh, ga, lh, la, RHO)
         top5 = sorted(score_probs.items(), key=lambda x: -x[1])[:5]
         for i, (sc, pr) in enumerate(top5, 1):
             mt[f"score_{i}"] = sc
@@ -78,13 +85,19 @@ for mt in matches:
         la = float(np.exp(a_a - b_h))
         mt["lambda_h"] = lh
         mt["lambda_a"] = la
-        # Recalcular top-5 marcadores con lambdas ajustados
+        # Recalcular top-5 marcadores con lambdas ajustados + corrección DC
         from math import exp, factorial
         def pois(l, k): return exp(-l) * (l**k) / factorial(min(k, 7))
+        def dc_tau(h, a, lh, la, rho):
+            if h==0 and a==0: return 1 - lh*la*rho
+            if h==1 and a==0: return 1 + la*rho
+            if h==0 and a==1: return 1 + lh*rho
+            if h==1 and a==1: return 1 - rho
+            return 1.0
         score_probs = {}
         for gh in range(8):
             for ga in range(8):
-                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga)
+                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga) * dc_tau(gh, ga, lh, la, RHO)
         top5 = sorted(score_probs.items(), key=lambda x: -x[1])[:5]
         for i, (sc, pr) in enumerate(top5, 1):
             mt[f"score_{i}"] = sc

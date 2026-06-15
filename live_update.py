@@ -183,13 +183,17 @@ def update(args):
     gf = base["gamma"] if args.home_country else 0
     lh_pred = np.exp(a_h - b_a + gf)
     la_pred = np.exp(a_a - b_h)
-    BW = 0.30
+    # Peso progresivo: sube 0.05 por cada partido previo del equipo (cap 0.60)
+    n_home = sum(1 for h in state["history"] if h["home"]==home or h["away"]==home)
+    n_away = sum(1 for h in state["history"] if h["home"]==away or h["away"]==away)
+    BW_home = min(0.30 + n_home * 0.05, 0.60)
+    BW_away = min(0.30 + n_away * 0.05, 0.60)
     diff_h = np.log(max(sh, 0.3)) - np.log(lh_pred)
     diff_a = np.log(max(sa, 0.3)) - np.log(la_pred)
-    state["alpha_adj"][home] = state["alpha_adj"].get(home, 0) + BW*diff_h/2
-    state["beta_adj"][away]  = state["beta_adj"].get(away, 0)  - BW*diff_h/2
-    state["alpha_adj"][away] = state["alpha_adj"].get(away, 0) + BW*diff_a/2
-    state["beta_adj"][home]  = state["beta_adj"].get(home, 0)  - BW*diff_a/2
+    state["alpha_adj"][home] = state["alpha_adj"].get(home, 0) + BW_home*diff_h/2
+    state["beta_adj"][away]  = state["beta_adj"].get(away, 0)  - BW_home*diff_h/2
+    state["alpha_adj"][away] = state["alpha_adj"].get(away, 0) + BW_away*diff_a/2
+    state["beta_adj"][home]  = state["beta_adj"].get(home, 0)  - BW_away*diff_a/2
     state["history"].append({"date": datetime.now().isoformat(), "home": home, "away": away,
                              "score": args.score, "lh_pred": float(lh_pred), "la_pred": float(la_pred)})
 
