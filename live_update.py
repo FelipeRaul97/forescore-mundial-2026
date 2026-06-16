@@ -73,8 +73,8 @@ def rebuild_adjs(state, base):
                      if x["home"]==away or x["away"]==away)
         BW_home = min(0.30 + n_home * 0.05, 0.60)
         BW_away = min(0.30 + n_away * 0.05, 0.60)
-        diff_h = np.log(max(sh, 0.3)) - np.log(lh_pred)
-        diff_a = np.log(max(sa, 0.3)) - np.log(la_pred)
+        diff_h = np.clip(np.log(max(sh, 0.3)) - np.log(lh_pred), -1.0, 1.0)
+        diff_a = np.clip(np.log(max(sa, 0.3)) - np.log(la_pred), -1.0, 1.0)
         adjs_a[home] = adjs_a.get(home, 0) + BW_home * diff_h / 2
         adjs_b[away]  = adjs_b.get(away, 0)  - BW_home * diff_h / 2
         adjs_a[away]  = adjs_a.get(away, 0)  + BW_away * diff_a / 2
@@ -213,8 +213,8 @@ def update(args):
     n_away = sum(1 for h in state["history"] if h["home"]==away or h["away"]==away)
     BW_home = min(0.30 + n_home * 0.05, 0.60)
     BW_away = min(0.30 + n_away * 0.05, 0.60)
-    diff_h = np.log(max(sh, 0.3)) - np.log(lh_pred)
-    diff_a = np.log(max(sa, 0.3)) - np.log(la_pred)
+    diff_h = np.clip(np.log(max(sh, 0.3)) - np.log(lh_pred), -1.0, 1.0)
+    diff_a = np.clip(np.log(max(sa, 0.3)) - np.log(la_pred), -1.0, 1.0)
     state["alpha_adj"][home] = state["alpha_adj"].get(home, 0) + BW_home*diff_h/2
     state["beta_adj"][away]  = state["beta_adj"].get(away, 0)  - BW_home*diff_h/2
     state["alpha_adj"][away] = state["alpha_adj"].get(away, 0) + BW_away*diff_a/2
