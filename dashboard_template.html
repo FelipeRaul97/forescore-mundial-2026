@@ -467,12 +467,22 @@ function renderThirds() {
 
   document.getElementById('thirdsContainer').innerHTML=`
     <table class="thirds-table">
+      <colgroup>
+        <col style="width:36px">
+        <col style="width:auto">
+        <col style="width:56px">
+        <col style="width:60px">
+        <col style="width:60px">
+        <col style="width:52px">
+        <col style="width:44px">
+        <col style="width:80px">
+      </colgroup>
       <thead><tr>
-        <th>#</th><th style="text-align:left">Equipo</th><th>Grupo</th>
-        <th title="Puntos reales">PTS R</th>
-        <th title="Puntos promedio simulados">PTS E</th>
-        <th>DG</th><th>GF</th>
-        <th>P. pasar</th>
+        <th style="text-align:right">#</th><th style="text-align:left">Equipo</th><th style="text-align:center">Grupo</th>
+        <th title="Puntos reales" style="text-align:center">PTS R</th>
+        <th title="Puntos promedio simulados" style="text-align:center">PTS E</th>
+        <th style="text-align:center">DG</th><th style="text-align:center">GF</th>
+        <th style="text-align:right">P. pasar</th>
       </tr></thead>
       <tbody>
         ${thirds.map((t,i)=>{
@@ -484,11 +494,11 @@ function renderThirds() {
             <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${qualify?'#4a6b3e':'var(--muted)'};font-weight:700;text-align:right;">${i+1}</td>
             <td style="font-family:'Fraunces',serif;font-size:15px;font-weight:500;">${t.team_es}${qualify?' <span style="color:#4a6b3e;font-size:11px;">✓</span>':''}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;">${t.group}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${rp>0?'#4a6b3e':'var(--muted)'};">${realPlayed[t.team]>0?rp:'—'}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">${(t.avg_points||0).toFixed(1)}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rd>0?'+':''}${rd}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rf}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:${t.p_3rd>0.3?'700':'400'};color:${t.p_3rd>0.3?'var(--accent)':'inherit'};">${(t.p_3rd*100).toFixed(1)}%</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;text-align:center;color:${rp>0?'#4a6b3e':'var(--muted)'};">${realPlayed[t.team]>0?rp:'—'}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:13px;text-align:center;">${(t.avg_points||0).toFixed(1)}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;color:var(--muted);">${rd>0?'+':''}${rd}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;color:var(--muted);">${rf}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;font-weight:${t.p_3rd>0.3?'700':'400'};color:${t.p_3rd>0.3?'var(--accent)':'inherit'};">${(t.p_3rd*100).toFixed(1)}%</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -638,7 +648,31 @@ function renderGroups() {
   const gm = {};
   teams.forEach(t => { if(!gm[t.group]) gm[t.group]=[]; gm[t.group].push(t); });
   document.getElementById('groupGrid').innerHTML = Object.keys(gm).sort().map(g => {
-    const sub = gm[g].sort((a,b) => b.avg_points - a.avg_points);
+    const ts = gm[g];
+
+    // Calcular puntos reales primero para ordenar (FIFA 2026: pts → DG → GF → H2H → sim)
+    const realPts = {}, realGd = {}, realGf = {}, realPlayed = {};
+    ts.forEach(t => { realPts[t.team_es]=0; realGd[t.team_es]=0; realGf[t.team_es]=0; realPlayed[t.team_es]=0; });
+    matches.filter(m => m.played && ts.some(t=>t.team_es===m.home_es) && ts.some(t=>t.team_es===m.away_es)).forEach(m => {
+      realPlayed[m.home_es]++; realPlayed[m.away_es]++;
+      if(m.score_h > m.score_a){ realPts[m.home_es]+=3; }
+      else if(m.score_h < m.score_a){ realPts[m.away_es]+=3; }
+      else { realPts[m.home_es]+=1; realPts[m.away_es]+=1; }
+      realGd[m.home_es]+=(m.score_h-m.score_a); realGd[m.away_es]+=(m.score_a-m.score_h);
+      realGf[m.home_es]+=m.score_h; realGf[m.away_es]+=m.score_a;
+    });
+    const hasAnyReal = ts.some(t => realPlayed[t.team_es] > 0);
+
+    // Desempate FIFA: 1)PTS 2)DG 3)GF 4)simulación como proxy H2H restante
+    const sub = [...ts].sort((a,b) => {
+      if(hasAnyReal) {
+        const dp = (realPts[b.team_es]||0)-(realPts[a.team_es]||0); if(dp!==0) return dp;
+        const dd = (realGd[b.team_es]||0)-(realGd[a.team_es]||0); if(dd!==0) return dd;
+        const df = (realGf[b.team_es]||0)-(realGf[a.team_es]||0); if(df!==0) return df;
+      }
+      return b.avg_points - a.avg_points;
+    });
+
     return `<div class="group-card">
       <div class="group-header">
         <div class="group-letter">${g}</div>
@@ -649,34 +683,19 @@ function renderGroups() {
           <th>Equipo</th><th title="Puntos reales jugados">PTS R</th><th title="Puntos promedio simulados (reales + esperados)">PTS E</th><th>DG</th><th>GF</th><th>1º</th><th>Pasa</th>
         </tr></thead>
         <tbody>
-        ${(()=>{
-          // Calcular puntos reales de partidos jugados en este grupo
-          const realPts = {}, realGd = {}, realGf = {};
-          sub.forEach(t => { realPts[t.team_es]=0; realGd[t.team_es]=0; realGf[t.team_es]=0; });
-          matches.filter(m => m.played && (sub.some(t=>t.team_es===m.home_es)||sub.some(t=>t.team_es===m.away_es))).forEach(m => {
-            if(m.score_h > m.score_a){ realPts[m.home_es]=(realPts[m.home_es]||0)+3; }
-            else if(m.score_h < m.score_a){ realPts[m.away_es]=(realPts[m.away_es]||0)+3; }
-            else { realPts[m.home_es]=(realPts[m.home_es]||0)+1; realPts[m.away_es]=(realPts[m.away_es]||0)+1; }
-            realGd[m.home_es]=(realGd[m.home_es]||0)+(m.score_h-m.score_a);
-            realGd[m.away_es]=(realGd[m.away_es]||0)+(m.score_a-m.score_h);
-            realGf[m.home_es]=(realGf[m.home_es]||0)+m.score_h;
-            realGf[m.away_es]=(realGf[m.away_es]||0)+m.score_a;
-          });
-          return sub.map((t,i) => {
-            const rp = realPts[t.team_es]||0;
-            const rd = realGd[t.team_es]||0;
-            const rf = realGf[t.team_es]||0;
-            const hasReal = rp > 0 || Object.values(realPts).some(v=>v>0);
-            return `<tr>
+        ${sub.map((t,i) => {
+          const rp = realPts[t.team_es]||0;
+          const rd = realGd[t.team_es]||0;
+          const rf = realGf[t.team_es]||0;
+          return `<tr>
           <td class="gt-name">${t.team_es}</td>
-          <td class="gt-pts" style="color:${hasReal?'#4a6b3e':'var(--muted)'};">${hasReal?rp:'—'}</td>
+          <td class="gt-pts" style="color:${realPlayed[t.team_es]>0?'#4a6b3e':'var(--muted)'};">${realPlayed[t.team_es]>0?rp:'—'}</td>
           <td class="gt-pts ${i===0?'top':''}">${(t.avg_points||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gd||0)>0?'+':''}${(t.avg_gd||0).toFixed(1)}</td>
           <td class="gt-stat">${(t.avg_gf||0).toFixed(1)}</td>
           <td class="gt-prob ${t.p_1st>0.5?'high':''}">${(t.p_1st*100).toFixed(1)}%</td>
           <td class="gt-prob ${t.p_advance>0.85?'high':''}">${(t.p_advance*100).toFixed(1)}%</td>
-        </tr>`;}).join('');
-        })()}
+        </tr>`;}).join('')}
         </tbody>
       </table>
     </div>`;
