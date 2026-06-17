@@ -23,6 +23,12 @@ if state_file.exists():
     with open(state_file) as f: state = json.load(f)
 else:
     state = {"alpha_adj":{}, "beta_adj":{}, "history":[]}
+
+# Usar rho y mu recalibrados desde el torneo si están disponibles
+RHO  = state.get("rho_live", RHO)
+MU_H = state.get("mu_h", 1.0)
+MU_A = state.get("mu_a", 1.0)
+
 alpha_adj = state.get("alpha_adj", {})
 beta_adj = state.get("beta_adj", {})
 history = state.get("history", [])
@@ -81,8 +87,8 @@ for mt in matches:
         b_h = beta.get(h_en, 0) + beta_adj.get(h_en, 0)
         a_a = alpha.get(a_en, 0) + alpha_adj.get(a_en, 0)
         b_a = beta.get(a_en, 0) + beta_adj.get(a_en, 0)
-        lh = float(np.exp(a_h - b_a))
-        la = float(np.exp(a_a - b_h))
+        lh = float(np.exp(a_h - b_a)) * MU_H
+        la = float(np.exp(a_a - b_h)) * MU_A
         mt["lambda_h"] = lh
         mt["lambda_a"] = la
         # Recalcular top-5 marcadores con lambdas ajustados + corrección DC

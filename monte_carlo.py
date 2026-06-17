@@ -44,16 +44,20 @@ def load_params():
     alpha = dict(zip(dc["team"], dc["alpha"]))
     beta = dict(zip(dc["team"], dc["beta"]))
     rho = float(glob["rho"].iloc[0])
+    mu_h, mu_a = 1.0, 1.0
     played = {}  # {(home_en, away_en): (gh, ga)}
     sf = WORKDIR/"live_state.json"
     if sf.exists():
         st = json.load(open(sf))
         for t,v in st.get("alpha_adj",{}).items(): alpha[t] = alpha.get(t,0)+v
         for t,v in st.get("beta_adj",{}).items():  beta[t]  = beta.get(t,0)+v
+        if "rho_live" in st: rho = st["rho_live"]
+        mu_h = st.get("mu_h", 1.0)
+        mu_a = st.get("mu_a", 1.0)
         for h in st.get("history", []):
             gh, ga = map(int, h["score"].split("-"))
             played[(h["home"], h["away"])] = (gh, ga)
-    return alpha, beta, rho, played
+    return alpha, beta, rho, mu_h, mu_a, played
 
 def apply_shrinkage(alpha, beta, lam=0.30):
     confs = {}
@@ -70,7 +74,7 @@ def apply_shrinkage(alpha, beta, lam=0.30):
     return a_sh, b_sh
 
 def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
-    alpha, beta, rho, played_scores = load_params()
+    alpha, beta, rho, mu_h, mu_a, played_scores = load_params()
     if shrink > 0:
         alpha, beta = apply_shrinkage(alpha, beta, lam=shrink)
     teams_meta = json.load(open(WORKDIR/"teams_base.json"))
@@ -88,7 +92,7 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
     gfix = [(i,j) for i in range(4) for j in range(i+1,4)]
 
     def play(h, a):
-        lh = np.exp(alpha[h]-beta[a]); la = np.exp(alpha[a]-beta[h])
+        lh = np.exp(alpha[h]-beta[a]) * mu_h; la = np.exp(alpha[a]-beta[h]) * mu_a
         if k_disp and k_disp < 1e6:
             lh = rng.gamma(k_disp, lh/k_disp); la = rng.gamma(k_disp, la/k_disp)
         gh = rng.poisson(lh); ga = rng.poisson(la)
@@ -99,7 +103,7 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
         return h if rng.random() < pn else a
 
     def play_goals(h, a):
-        lh = np.exp(alpha[h]-beta[a]); la = np.exp(alpha[a]-beta[h])
+        lh = np.exp(alpha[h]-beta[a]) * mu_h; la = np.exp(alpha[a]-beta[h]) * mu_a
         if k_disp and k_disp < 1e6:
             lh = rng.gamma(k_disp, lh/k_disp); la = rng.gamma(k_disp, la/k_disp)
         return rng.poisson(lh), rng.poisson(la)

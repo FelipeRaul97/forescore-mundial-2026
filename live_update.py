@@ -58,6 +58,53 @@ def save_state(state):
     state["last_updated"] = datetime.now().isoformat()
     with open(STATE_FILE,"w") as f: json.dump(state, f, indent=2, ensure_ascii=False)
 
+def recalibrate_params(state):
+    """Estima rho_live y mu (inflacion de goles) desde los partidos jugados."""
+    from scipy.optimize import minimize_scalar
+    import math
+    history = state.get("history", [])
+    if len(history) < 5:
+        return state
+    obs_h  = [int(h["score"].split("-")[0]) for h in history]
+    obs_a  = [int(h["score"].split("-")[1]) for h in history]
+    pred_h = [h["lh_pred"] for h in history]
+    pred_a = [h["la_pred"] for h in history]
+    # Peso de confianza: crece con partidos, máx 0.70 a partir de ~60 partidos
+    rho_prior = -0.092
+    w = min(len(history) / 60.0, 0.70)
+
+    # mu_mle: ratio goles observados / predichos
+    mu_h_mle = np.mean(obs_h) / np.mean(pred_h)
+    mu_a_mle = np.mean(obs_a) / np.mean(pred_a)
+    # Blend con prior (1.0 = sin inflación)
+    mu_h = float(np.clip((1 - w) * 1.0 + w * mu_h_mle, 0.7, 1.5))
+    mu_a = float(np.clip((1 - w) * 1.0 + w * mu_a_mle, 0.7, 1.5))
+
+    # rho MLE sobre los partidos del torneo
+    def neg_ll(rho):
+        ll = 0
+        for sh, sa, lh, la in zip(obs_h, obs_a, pred_h, pred_a):
+            lhs, las = lh * mu_h, la * mu_a
+            p = (math.exp(-lhs) * (lhs**sh) / math.factorial(min(sh,7)) *
+                 math.exp(-las) * (las**sa) / math.factorial(min(sa,7)))
+            if   sh==0 and sa==0: tau = 1 - lhs*las*rho
+            elif sh==1 and sa==0: tau = 1 + las*rho
+            elif sh==0 and sa==1: tau = 1 + lhs*rho
+            elif sh==1 and sa==1: tau = 1 - rho
+            else:                 tau = 1.0
+            ll += math.log(max(p * tau, 1e-10))
+        return -ll
+    res = minimize_scalar(neg_ll, bounds=(-0.5, -0.01), method="bounded")
+    rho_mle = res.x
+    # Blend rho con prior
+    rho_live = float((1 - w) * rho_prior + w * rho_mle)
+    state["rho_live"] = rho_live
+    state["mu_h"]     = mu_h
+    state["mu_a"]     = mu_a
+    print(f"  rho recalibrado: {rho_live:.4f} (prior={rho_prior}, mle={rho_mle:.4f}, w={w:.2f})")
+    print(f"  mu_h: {mu_h:.3f}  mu_a: {mu_a:.3f}")
+    return state
+
 def rebuild_adjs(state, base):
     """Reconstruye alpha_adj y beta_adj desde cero leyendo todo el historial."""
     adjs_a = {}
@@ -281,6 +328,7 @@ def resimulate(args):
     # Siempre reconstruir ajustes desde historial para evitar estado corrupto
     state = load_state(); base = load_base()
     state = rebuild_adjs(state, base)
+    state = recalibrate_params(state)
     save_state(state)
     print(f"Re-anclando a Elo (w={args.elo_w})...")
     subprocess.run([sys.executable, str(WORKDIR/"elo_anchor.py"), "--w", str(args.elo_w)],
