@@ -434,12 +434,13 @@ function toggleHeatmap(btn, m) {
 
 function renderThirds() {
   // Calcular puntos reales de cada equipo
-  const realPts={}, realGd={}, realGf={};
-  teams.forEach(t=>{ realPts[t.team]=0; realGd[t.team]=0; realGf[t.team]=0; });
+  const realPts={}, realGd={}, realGf={}, realPlayed={};
+  teams.forEach(t=>{ realPts[t.team]=0; realGd[t.team]=0; realGf[t.team]=0; realPlayed[t.team]=0; });
   matches.filter(m=>m.played).forEach(m=>{
     const hen=teams.find(t=>t.team_es===m.home_es)?.team;
     const aen=teams.find(t=>t.team_es===m.away_es)?.team;
     if(!hen||!aen) return;
+    realPlayed[hen]=(realPlayed[hen]||0)+1; realPlayed[aen]=(realPlayed[aen]||0)+1;
     if(m.score_h>m.score_a){realPts[hen]+=3;}
     else if(m.score_h<m.score_a){realPts[aen]+=3;}
     else{realPts[hen]+=1;realPts[aen]+=1;}
@@ -483,7 +484,7 @@ function renderThirds() {
             <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${qualify?'#4a6b3e':'var(--muted)'};font-weight:700;text-align:right;">${i+1}</td>
             <td style="font-family:'Fraunces',serif;font-size:15px;font-weight:500;">${t.team_es}${qualify?' <span style="color:#4a6b3e;font-size:11px;">✓</span>':''}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;">${t.group}</td>
-            <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${rp>0?'#4a6b3e':'var(--muted)'};">${rp>0?rp:'—'}</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:${rp>0?'#4a6b3e':'var(--muted)'};">${realPlayed[t.team]>0?rp:'—'}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">${(t.avg_points||0).toFixed(1)}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rd>0?'+':''}${rd}</td>
             <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">${rf}</td>
