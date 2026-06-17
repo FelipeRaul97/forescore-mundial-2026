@@ -98,6 +98,13 @@ def recalibrate_params(state):
     rho_mle = res.x
     # Blend rho con prior
     rho_live = float((1 - w) * rho_prior + w * rho_mle)
+    # Si los parámetros cambiaron respecto al estado anterior, resetear snapshot
+    # para que el delta de campeon no refleje el recalibrado sino solo partidos reales
+    old_rho = state.get("rho_live", rho_prior)
+    old_mu  = state.get("mu_h", 1.0)
+    if abs(rho_live - old_rho) > 0.005 or abs(mu_h - old_mu) > 0.005:
+        state.pop("p_champ_snapshot", None)
+
     state["rho_live"] = rho_live
     state["mu_h"]     = mu_h
     state["mu_a"]     = mu_a
