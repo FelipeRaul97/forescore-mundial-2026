@@ -207,7 +207,9 @@ def predict(args):
         backup_gk_home=args.backup_gk_home, backup_gk_away=args.backup_gk_away,
         rotation_home=args.rotation_home, rotation_away=args.rotation_away,
         weather_extreme=args.weather_extreme, is_home_country=args.home_country)
-    ph, pd_, pa, pm = match_prob(lh, la, base["rho"])
+    # Usar rho aprendido del torneo (consistente con monte_carlo); cae a base["rho"] si no hay
+    rho_use = state.get("rho_live", base["rho"])
+    ph, pd_, pa, pm = match_prob(lh, la, rho_use)
     # Ajuste de empate por equipo (v3)
     dt_path = WORKDIR / "draw_tendency.csv"
     if dt_path.exists():
