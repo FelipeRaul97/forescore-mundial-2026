@@ -71,7 +71,7 @@ def recalibrate_params(state):
     pred_a = [h["la_pred"] for h in history]
     # Peso de confianza: crece con partidos, máx 0.70 a partir de ~60 partidos
     rho_prior = -0.092
-    w = min(len(history) / 60.0, 0.70)
+    w = min(len(history) / 45.0, 0.75)
 
     # mu_mle: ratio goles observados / predichos
     mu_h_mle = np.mean(obs_h) / np.mean(pred_h)
@@ -173,7 +173,14 @@ def compute_lambdas(home, away, base, state, **kw):
     if kw.get("weather_extreme"):
         log_lh += np.log(0.95); log_la += np.log(0.95)
         adj.append("Clima extremo: ambos *0.95")
-    return float(np.exp(log_lh)), float(np.exp(log_la)), adj
+    # Inflacion de goles aprendida del torneo (consistente con monte_carlo y build_dashboard)
+    mu_h = state.get("mu_h", 1.0)
+    mu_a = state.get("mu_a", 1.0)
+    lh = float(np.exp(log_lh)) * mu_h
+    la = float(np.exp(log_la)) * mu_a
+    if abs(mu_h - 1.0) > 0.005 or abs(mu_a - 1.0) > 0.005:
+        adj.append(f"Inflacion goles torneo: lambda_h *{mu_h:.2f}, lambda_a *{mu_a:.2f}")
+    return lh, la, adj
 
 def match_prob(lh, la, rho):
     p = np.zeros((9,9))
