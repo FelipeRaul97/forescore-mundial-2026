@@ -46,6 +46,17 @@ python live_update.py reset               # volver al modelo base
 python live_update.py rebuild-dashboard   # regenerar HTML de marcadores
 ```
 
+### Backtest (evaluar el modelo)
+Evalúa la precisión sobre los partidos ya jugados, replicando la regla real de `predict`:
+```bash
+python backtest.py                 # walk-forward (sin fuga de datos) — el número honesto
+python backtest.py -v              # detalle partido a partido
+python backtest.py --in-sample     # rápido, usa mu/rho final (optimista)
+python backtest.py --no-mu         # mide el impacto de la inflación de goles
+python backtest.py --rho -0.092    # fuerza un rho fijo (p.ej. el prior)
+```
+Reporta acierto 1X2, marcador exacto, MAE/RMSE de goles, **log-loss** y **Brier** (calibración probabilística) y el sesgo de goles. Úsalo para validar cualquier cambio con números, no a ojo.
+
 ## Flujo durante el torneo
 
 ```
