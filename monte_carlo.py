@@ -16,6 +16,11 @@ import bracket_2026 as BR
 
 WORKDIR = Path(__file__).parent
 
+# Ventaja de anfitrion: juegan en su pais (consistente con live_update / build_dashboard).
+# Se aplica a la lambda del anfitrion siempre que juega.
+HOSTS_2026 = {"Mexico", "United States", "Canada"}
+HOST_ADV = 1.25
+
 CONFED = {
     "Argentina":"CONMEBOL","Brazil":"CONMEBOL","Uruguay":"CONMEBOL","Colombia":"CONMEBOL",
     "Ecuador":"CONMEBOL","Paraguay":"CONMEBOL",
@@ -93,6 +98,8 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
 
     def play(h, a):
         lh = np.exp(alpha[h]-beta[a]) * mu_h; la = np.exp(alpha[a]-beta[h]) * mu_a
+        if h in HOSTS_2026: lh *= HOST_ADV
+        if a in HOSTS_2026: la *= HOST_ADV
         if k_disp and k_disp < 1e6:
             lh = rng.gamma(k_disp, lh/k_disp); la = rng.gamma(k_disp, la/k_disp)
         gh = rng.poisson(lh); ga = rng.poisson(la)
@@ -104,6 +111,8 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
 
     def play_goals(h, a):
         lh = np.exp(alpha[h]-beta[a]) * mu_h; la = np.exp(alpha[a]-beta[h]) * mu_a
+        if h in HOSTS_2026: lh *= HOST_ADV
+        if a in HOSTS_2026: la *= HOST_ADV
         if k_disp and k_disp < 1e6:
             lh = rng.gamma(k_disp, lh/k_disp); la = rng.gamma(k_disp, la/k_disp)
         return rng.poisson(lh), rng.poisson(la)
