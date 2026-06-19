@@ -134,9 +134,11 @@ def run(args):
         else:  # in-sample
             mu_h, mu_a, rho = mu_h_f, mu_a_f, rho_f
 
-        # lambdas base de pre-partido (ya guardadas) * inflacion de goles
+        # lambdas base de pre-partido (ya guardadas) * inflacion de goles * ventaja anfitrion
         lh = m["lh_pred"] * mu_h
         la = m["la_pred"] * mu_a
+        if not args.no_host and home in L.HOSTS_2026:
+            lh *= L.HOST_ADV
 
         pred, (pH, pD, pA), (bh, ba) = predict_triplet(
             lh, la, home, away, base, rho, draw_adj, use_draw_adj)
@@ -187,6 +189,8 @@ def main():
     ap.add_argument("--no-mu", action="store_true", help="desactiva la inflacion de goles")
     ap.add_argument("--no-draw-adj", action="store_true",
                     help="desactiva el ajuste de empate por equipo")
+    ap.add_argument("--no-host", action="store_true",
+                    help="desactiva la ventaja de anfitrion")
     ap.add_argument("--rho", type=float, default=None,
                     help="fuerza un rho fijo (p.ej. -0.092 para el prior)")
     ap.add_argument("-v", "--verbose", action="store_true",

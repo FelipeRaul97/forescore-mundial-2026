@@ -29,6 +29,10 @@ RHO  = state.get("rho_live", RHO)
 MU_H = state.get("mu_h", 1.0)
 MU_A = state.get("mu_a", 1.0)
 
+# Ventaja de anfitrion (consistente con live_update.compute_lambdas)
+HOSTS_2026 = {"Mexico", "United States", "Canada"}
+HOST_ADV = 1.25
+
 alpha_adj = state.get("alpha_adj", {})
 beta_adj = state.get("beta_adj", {})
 history = state.get("history", [])
@@ -87,7 +91,7 @@ for mt in matches:
         b_h = beta.get(h_en, 0) + beta_adj.get(h_en, 0)
         a_a = alpha.get(a_en, 0) + alpha_adj.get(a_en, 0)
         b_a = beta.get(a_en, 0) + beta_adj.get(a_en, 0)
-        lh = float(np.exp(a_h - b_a)) * MU_H
+        lh = float(np.exp(a_h - b_a)) * MU_H * (HOST_ADV if h_en in HOSTS_2026 else 1.0)
         la = float(np.exp(a_a - b_h)) * MU_A
         mt["lambda_h"] = lh
         mt["lambda_a"] = la

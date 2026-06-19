@@ -11,6 +11,12 @@ from pathlib import Path
 WORKDIR = Path(__file__).parent
 STATE_FILE = WORKDIR / "live_state.json"
 
+# Ventaja de anfitrion: Mexico/EUA/Canada juegan en casa de verdad (sede no neutral).
+# Factor sobre lambda del local justificado por la literatura de Mundiales (~+25% goles),
+# corroborado por el backtest. Se aplica automaticamente cuando el local es anfitrion.
+HOSTS_2026 = {"Mexico", "United States", "Canada"}
+HOST_ADV = 1.25
+
 def load_base():
     dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv", encoding="utf-8")
     glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv", encoding="utf-8")
@@ -148,6 +154,9 @@ def compute_lambdas(home, away, base, state, **kw):
     log_lh = a_h - b_a + gf
     log_la = a_a - b_h
     adj = []
+    if home in HOSTS_2026:
+        log_lh += np.log(HOST_ADV)
+        adj.append(f"Ventaja anfitrion ({home}): lambda_h *{HOST_ADV:.2f}")
     if kw.get("absences_home"):
         items = kw["absences_home"].split(",") if isinstance(kw["absences_home"], str) else kw["absences_home"]
         n = len([x for x in items if x.strip()])
@@ -269,7 +278,8 @@ def update(args):
     a_a = base["alpha"][away] + state["alpha_adj"].get(away, 0)
     b_a = base["beta"][away] + state["beta_adj"].get(away, 0)
     gf = base["gamma"] if args.home_country else 0
-    lh_pred = np.exp(a_h - b_a + gf)
+    host_adv = HOST_ADV if home in HOSTS_2026 else 1.0
+    lh_pred = np.exp(a_h - b_a + gf) * host_adv
     la_pred = np.exp(a_a - b_h)
     # Peso progresivo: sube 0.05 por cada partido previo del equipo (cap 0.60)
     n_home = sum(1 for h in state["history"] if h["home"]==home or h["away"]==home)

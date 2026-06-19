@@ -53,6 +53,7 @@ python backtest.py                 # walk-forward (sin fuga de datos) — el nú
 python backtest.py -v              # detalle partido a partido
 python backtest.py --in-sample     # rápido, usa mu/rho final (optimista)
 python backtest.py --no-mu         # mide el impacto de la inflación de goles
+python backtest.py --no-host       # mide el impacto de la ventaja de anfitrión
 python backtest.py --rho -0.092    # fuerza un rho fijo (p.ej. el prior)
 ```
 Reporta acierto 1X2, marcador exacto, MAE/RMSE de goles, **log-loss** y **Brier** (calibración probabilística) y el sesgo de goles. Úsalo para validar cualquier cambio con números, no a ojo.
