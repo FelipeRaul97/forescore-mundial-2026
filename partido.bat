@@ -11,6 +11,10 @@ REM    partido.bat qualify "Argentina" "R:B"
 REM    partido.bat qualify "Morocco" "T:ABCDF"
 REM ============================================================
 
+REM -- Limitar hilos de BLAS: evita el OpenBLAS OOM en la simulacion --
+set OPENBLAS_NUM_THREADS=1
+set OMP_NUM_THREADS=1
+
 REM -- Modo qualify --
 if /i "%~1"=="qualify" (
     if "%~3"=="" (
