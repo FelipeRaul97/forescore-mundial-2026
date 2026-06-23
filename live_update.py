@@ -299,8 +299,12 @@ def update(args):
     newly_qualified = auto_qualify(state, base)
 
     save_state(state)
+    # Para mostrar: lambdas infladas por mu (igual que el dashboard). El lh_pred/la_pred
+    # crudos se guardan tal cual porque recalibrate_params los necesita para medir mu.
+    mu_h = state.get("mu_h", 1.0); mu_a = state.get("mu_a", 1.0)
+    lh_disp = lh_pred * mu_h; la_disp = la_pred * mu_a
     print(f"\nUPDATE: {home} {sh}-{sa} {away}")
-    print(f"lambdas predichas: {lh_pred:.2f} - {la_pred:.2f}")
+    print(f"lambdas esperadas (con mu, = dashboard): {lh_disp:.2f} - {la_disp:.2f}")
     print(f"\nAjustes Bayesianos aplicados (peso_local={BW_home:.2f}, peso_visit={BW_away:.2f}):")
     print(f"  alpha_{home}: {state['alpha_adj'][home]:+.3f}")
     print(f"  alpha_{away}: {state['alpha_adj'][away]:+.3f}")
