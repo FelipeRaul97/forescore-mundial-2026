@@ -76,13 +76,15 @@ for mt in matches:
             if h==0 and a==1: return 1 + lh*rho
             if h==1 and a==1: return 1 - rho
             return 1.0
-        # Aplicar mu (igual que la prediccion pre-partido); lh_pred ya incluye host_adv.
-        # Sin esto, el top-5 retrospectivo no coincide con el que se mostro antes del partido.
-        lh, la = rec["lh_pred"] * MU_H, rec["la_pred"] * MU_A
+        # Usar mu y rho del momento del partido (frozen), no los recalibrados actuales.
+        mu_h_rec = rec.get("mu_h", MU_H)
+        mu_a_rec = rec.get("mu_a", MU_A)
+        rho_rec  = rec.get("rho",  RHO)
+        lh, la = rec["lh_pred"] * mu_h_rec, rec["la_pred"] * mu_a_rec
         score_probs = {}
         for gh in range(8):
             for ga in range(8):
-                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga) * dc_tau(gh, ga, lh, la, RHO)
+                score_probs[f"{gh}-{ga}"] = pois(lh, gh) * pois(la, ga) * dc_tau(gh, ga, lh, la, rho_rec)
         top5 = sorted(score_probs.items(), key=lambda x: -x[1])[:5]
         for i, (sc, pr) in enumerate(top5, 1):
             mt[f"score_{i}"] = sc
