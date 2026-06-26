@@ -76,11 +76,14 @@ for mt in matches:
             if h==0 and a==1: return 1 + lh*rho
             if h==1 and a==1: return 1 - rho
             return 1.0
-        # Usar mu y rho del momento del partido (frozen), no los recalibrados actuales.
-        mu_h_rec = rec.get("mu_h", MU_H)
-        mu_a_rec = rec.get("mu_a", MU_A)
-        rho_rec  = rec.get("rho",  RHO)
-        lh, la = rec["lh_pred"] * mu_h_rec, rec["la_pred"] * mu_a_rec
+        # Usar lambdas con mu del momento del partido (frozen).
+        # lh_display ya incluye mu; si no existe, calcular con mu guardado.
+        rho_rec = rec.get("rho", RHO)
+        if "lh_display" in rec:
+            lh, la = rec["lh_display"], rec["la_display"]
+        else:
+            lh = rec["lh_pred"] * rec.get("mu_h", MU_H)
+            la = rec["la_pred"] * rec.get("mu_a", MU_A)
         score_probs = {}
         for gh in range(8):
             for ga in range(8):

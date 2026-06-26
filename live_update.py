@@ -292,10 +292,14 @@ def update(args):
     state["beta_adj"][away]  = state["beta_adj"].get(away, 0)  - BW_home*diff_h/2
     state["alpha_adj"][away] = state["alpha_adj"].get(away, 0) + BW_away*diff_a/2
     state["beta_adj"][home]  = state["beta_adj"].get(home, 0)  - BW_away*diff_a/2
+    mu_h_now = state.get("mu_h", 1.0)
+    mu_a_now = state.get("mu_a", 1.0)
     state["history"].append({"date": datetime.now().isoformat(), "home": home, "away": away,
                              "score": args.score, "lh_pred": float(lh_pred), "la_pred": float(la_pred),
-                             "mu_h": state.get("mu_h", 1.0), "mu_a": state.get("mu_a", 1.0),
-                             "rho": state.get("rho_live", RHO)})
+                             "lh_display": float(lh_pred) * mu_h_now,
+                             "la_display": float(la_pred) * mu_a_now,
+                             "mu_h": mu_h_now, "mu_a": mu_a_now,
+                             "rho": state.get("rho_live", base["rho"])})
 
     # Detectar grupos completados y registrar clasificados W: y R:
     newly_qualified = auto_qualify(state, base)
