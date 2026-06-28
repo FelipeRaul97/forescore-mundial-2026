@@ -9,8 +9,9 @@ import pandas as pd
 from pathlib import Path
 
 WORKDIR = Path(__file__).parent
-SRC = WORKDIR / "dashboard_template.html"
+# SRC = output mismo: build_dashboard actualiza los datos sin destruir el JS
 OUT = WORKDIR / "forescore_mundial_dashboard.html"
+SRC = OUT if OUT.exists() else WORKDIR / "dashboard_template.html"
 
 dc = pd.read_csv(WORKDIR / "dixon_coles_params.csv", encoding="utf-8")
 glob = pd.read_csv(WORKDIR / "dixon_coles_global.csv", encoding="utf-8")
@@ -112,6 +113,25 @@ if re.search(r"const qualifiers = \{.*?\};", html_out, re.DOTALL):
 else:
     html_out = html_out.replace("const KO_R32 =",
                                 f"const qualifiers = {qual_json};\nconst KO_R32 =", 1)
+
+# Actualizar DC.teams con alpha_adj/beta_adj del torneo para que el bracket KO
+# use los parametros recalibrados (no solo la fase de grupos)
+dc_match = re.search(r"const DC = (\{.*?\});", html_out, re.DOTALL)
+if dc_match:
+    dc_data = json.loads(dc_match.group(1))
+    for team_es, params in dc_data["teams"].items():
+        team_en = en_by_es.get(team_es, team_es)
+        adj_a = alpha_adj.get(team_en, 0)
+        adj_b = beta_adj.get(team_en, 0)
+        if adj_a or adj_b:
+            params["a"] = round(params["a"] + adj_a, 5)
+            params["b"] = round(params["b"] + adj_b, 5)
+    dc_data["rho"]  = round(RHO, 5)
+    dc_data["mu_h"] = round(MU_H, 5)
+    dc_data["mu_a"] = round(MU_A, 5)
+    dc_json = json.dumps(dc_data, ensure_ascii=False)
+    html_out = re.sub(r"const DC = \{.*?\};", f"const DC = {dc_json};",
+                      html_out, count=1, flags=re.DOTALL)
 
 # El patch JS ya no es necesario — renderMatches() maneja los jugados directamente
 
