@@ -1156,6 +1156,17 @@ function renderKOMatches() {
     81:['W:D','T:BEFIJ'], 82:['W:G','T:AEHIJ'],   83:['R:K','R:L'],    84:['W:H','R:J'],
     85:['W:B','T:EFGIJ'], 86:['W:J','R:H'],        87:['W:K','T:DEIJL'],88:['R:D','R:G']
   };
+  // Fechas oficiales FIFA 2026 — R32 (fuente: FIFA.com)
+  const DATE_KO = {
+    73:'2026-06-29', 74:'2026-06-29',
+    75:'2026-06-30', 76:'2026-06-30',
+    77:'2026-07-01', 78:'2026-07-01',
+    79:'2026-07-02', 80:'2026-07-02',
+    81:'2026-07-03', 82:'2026-07-03',
+    83:'2026-07-04', 84:'2026-07-04',
+    85:'2026-07-05', 86:'2026-07-05',
+    87:'2026-07-06', 88:'2026-07-06',
+  };
   const VENUE_KO = {
     73:'USA',74:'USA',75:'MEX',76:'USA',77:'USA',78:'USA',79:'MEX',80:'USA',
     81:'USA',82:'USA',83:'CAN',84:'USA',85:'CAN',86:'USA',87:'USA',88:'USA',
@@ -1256,11 +1267,13 @@ function renderKOMatches() {
     const sA=resolveSlot(slots[0]), sB=resolveSlot(slots[1]);
     if(sA.name==='?'||sB.name==='?') continue;
     const venue=VENUE_KO[mId]||'USA';
+    const date=DATE_KO[mId]||'2026-07-01';
     const {pH,pA,lh,la}=matchProbsKO(sA.name,sB.name,venue);
     const certainty=Math.max(pH,pA);
     const t5=top5KO(lh,la);
     const maxP=Math.max(...t5.map(x=>x.p));
     const favPct=(certainty*100).toFixed(1);
+    const dateLabel=date.substring(5).replace('-','/');
     const scoresCells=t5.map(({s,p})=>{
       const isTop=p===maxP;
       return `<div class="score-cell ${isTop?'top':''}"><div class="score">${s}</div><div class="score-prob">${(p*100).toFixed(1)}%</div></div>`;
@@ -1268,11 +1281,12 @@ function renderKOMatches() {
     const confA=sA.conf?` <span style="color:var(--green);font-size:11px;">✓</span>`:`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);"> (${(sA.p*100).toFixed(0)}%)</span>`;
     const confB=sB.conf?` <span style="color:var(--green);font-size:11px;">✓</span>`:`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);"> (${(sB.p*100).toFixed(0)}%)</span>`;
     cards.push({
+      date,
       certainty,
       html:`<div class="match-card">
         <div>
-          <div class="match-date" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);">${favPct}%</div>
-          <div class="match-date" style="margin-top:4px;">R32</div>
+          <div class="match-date">${dateLabel}</div>
+          <div class="match-date" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);margin-top:4px;">${favPct}%</div>
           <div class="match-date" style="margin-top:2px;">λ ${lh.toFixed(2)}–${la.toFixed(2)}</div>
         </div>
         <div>
@@ -1290,7 +1304,7 @@ function renderKOMatches() {
       </div>`
     });
   }
-  cards.sort((a,b)=>b.certainty-a.certainty);
+  cards.sort((a,b)=>a.date.localeCompare(b.date)||(b.certainty-a.certainty));
   document.getElementById('koMatchesContainer').innerHTML = cards.map(c=>c.html).join('');
 }
 
