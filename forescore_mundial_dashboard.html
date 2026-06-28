@@ -237,6 +237,7 @@ LIVE · 72 partidos procesados · 47 equipos ajustados
   <button class="tab" onclick="showSection('thirds', this)">Terceros</button>
   <button class="tab" onclick="showSection('matches', this)">Marcadores</button>
   <button class="tab" onclick="showSection('knockout', this)">Eliminatorias</button>
+  <button class="tab" onclick="showSection('ko-matches', this)">Marcadores KO</button>
   <button class="tab" onclick="showSection('bracket', this)">Camino al título</button>
   <button class="tab" onclick="showSection('timeline', this)">Timeline</button>
   <button class="tab" onclick="showSection('calibration', this)">Calibración</button>
@@ -353,6 +354,15 @@ LIVE · 72 partidos procesados · 47 equipos ajustados
     Antes de que terminen los grupos, cada cruce muestra el equipo más probable por posición (proyección del modelo). A medida que se jueguen los partidos, los cruces se irán llenando con los clasificados reales.
   </p>
   <div id="knockoutBracket" style="overflow-x: auto;"></div>
+</section>
+
+<section id="ko-matches" class="section">
+  <div class="kicker">Marcadores fase eliminatoria</div>
+  <h2 class="section-title">Distribución de marcadores · KO</h2>
+  <p style="font-family:'Fraunces',serif;font-size:18px;color:var(--muted);max-width:800px;margin-bottom:36px;font-style:italic;">
+    Top-5 marcadores más probables por cruce eliminatorio, ordenados de mayor a menor certeza (% favorito). El modelo aplica Dixon-Coles con factor KO bayesiano.
+  </p>
+  <div id="koMatchesContainer"></div>
 </section>
 
 <section id="bracket" class="section">
@@ -842,6 +852,7 @@ function showSection(name, btn) {
   if (name === 'matches') renderMatches();
   if (name === 'bracket') renderBracket();
   if (name === 'knockout') renderKnockout();
+  if (name === 'ko-matches') renderKOMatches();
   if (name === 'thirds') renderThirds();
   if (name === 'timeline') renderTimeline();
   if (name === 'calibration') renderCalibration();
@@ -1111,6 +1122,176 @@ function renderKnockout() {
       </div>
       ${RSF}${G}${RQF}${G}${RR16}${G}${RR32}
     </div>`;
+}
+
+function toggleHeatmapKO(btn, lh, la) {
+  const wrap = btn.nextElementSibling;
+  if (wrap.style.display !== 'none') { wrap.style.display='none'; btn.textContent='Heatmap ▾'; return; }
+  btn.textContent='Heatmap ▴';
+  const MAX=6;
+  const pois=(l,k)=>Math.exp(-l)*Math.pow(l,k)/[1,1,2,6,24,120,720][k];
+  const cells=[];
+  let maxP=0;
+  for(let h=0;h<=MAX;h++) for(let a=0;a<=MAX;a++){const p=pois(lh,h)*pois(la,a);if(p>maxP)maxP=p;cells.push({h,a,p});}
+  const rows=[];
+  for(let h=MAX;h>=0;h--){
+    let row=`<tr><th>${h}</th>`;
+    for(let a=0;a<=MAX;a++){
+      const p=cells.find(c=>c.h===h&&c.a===a).p;
+      const alpha=Math.round(220*(p/maxP));
+      const bg=`rgba(200,51,30,${(p/maxP*0.85).toFixed(2)})`;
+      const color=alpha>140?'#f4ede2':'var(--ink)';
+      row+=`<td style="background:${bg};color:${color};font-size:10px;">${(p*100).toFixed(1)}</td>`;
+    }
+    rows.push(row+'</tr>');
+  }
+  wrap.innerHTML=`<table class="heatmap-table"><thead><tr><th>L\\V</th>${Array.from({length:MAX+1},(_,i)=>`<th>${i}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">Filas=goles local · Columnas=goles visitante · Valores=%</div>`;
+  wrap.style.display='block';
+}
+
+function renderKOMatches() {
+  const M_R32 = {
+    73:['R:A','R:B'],     74:['W:E','T:ABCDF'],  75:['W:F','R:C'],    76:['W:C','R:F'],
+    77:['W:I','T:CDFGH'], 78:['R:E','R:I'],       79:['W:A','T:CEFHI'],80:['W:L','T:EHIJK'],
+    81:['W:D','T:BEFIJ'], 82:['W:G','T:AEHIJ'],   83:['R:K','R:L'],    84:['W:H','R:J'],
+    85:['W:B','T:EFGIJ'], 86:['W:J','R:H'],        87:['W:K','T:DEIJL'],88:['R:D','R:G']
+  };
+  const VENUE_KO = {
+    73:'USA',74:'USA',75:'MEX',76:'USA',77:'USA',78:'USA',79:'MEX',80:'USA',
+    81:'USA',82:'USA',83:'CAN',84:'USA',85:'CAN',86:'USA',87:'USA',88:'USA',
+  };
+  const COUNTRY_KO = {'México':'MEX','EEUU':'USA','Canadá':'CAN'};
+  const FACT_KO = [1]; for (let i=1;i<=12;i++) FACT_KO[i] = FACT_KO[i-1]*i;
+  const poisKO = (k, lam) => Math.exp(-lam) * Math.pow(lam, k) / FACT_KO[k];
+  const KO_HIST_KO = {
+    'Argentina':[20,13],'Brasil':[25,17],'Uruguay':[8,3],'Colombia':[4,1],'Ecuador':[1,0],'Paraguay':[4,1],
+    'España':[11,6],'Francia':[18,15],'Inglaterra':[16,7],'Alemania':[24,19],'Portugal':[8,3],
+    'Países Bajos':[18,10],'Croacia':[12,9],'Bélgica':[9,4],'Suiza':[5,0],'Suecia':[8,4],
+    'Noruega':[1,0],'Turquía':[4,3],'México':[7,0],'EEUU':[6,1],'Canadá':[0,0],
+    'Marruecos':[4,2],'Senegal':[3,1],'Ghana':[3,1],'Japón':[4,0],'Corea del Sur':[6,2],
+    'Australia':[2,0],'Arabia Saudí':[1,0],
+  };
+  const KO_GAMMA=0.10, KO_PRI_N=10, KO_PRI_W=5;
+  function koBiasKO(team) {
+    const h = KO_HIST_KO[team]||[0,0];
+    const p = (h[1]+KO_PRI_W)/(h[0]+KO_PRI_N);
+    return Math.log(p/(1-p));
+  }
+  function computeLambdas(home, away, venue) {
+    const H = DC.teams[home], A = DC.teams[away];
+    if (!H||!A) return {lh:1,la:1};
+    let lh = Math.exp(H.a - A.b) * DC.mu_h;
+    let la = Math.exp(A.a - H.b) * DC.mu_a;
+    if (H.host && COUNTRY_KO[home]===venue) lh *= DC.host_adv;
+    if (A.host && COUNTRY_KO[away]===venue) la *= DC.host_adv;
+    lh *= Math.exp(KO_GAMMA * koBiasKO(home));
+    la *= Math.exp(KO_GAMMA * koBiasKO(away));
+    return {lh, la};
+  }
+  function matchProbsKO(home, away, venue) {
+    const {lh, la} = computeLambdas(home, away, venue);
+    const rho = DC.rho;
+    let pHw=0, pD=0, pAw=0;
+    for (let i=0;i<=10;i++) for (let j=0;j<=10;j++) {
+      let t=1;
+      if(i===0&&j===0) t=1-lh*la*rho;
+      else if(i===1&&j===0) t=1+la*rho;
+      else if(i===0&&j===1) t=1+lh*rho;
+      else if(i===1&&j===1) t=1-rho;
+      const p=poisKO(i,lh)*poisKO(j,la)*t;
+      if(i>j) pHw+=p; else if(i===j) pD+=p; else pAw+=p;
+    }
+    const ph=DC.teams[home]?.p||0.5, pa=DC.teams[away]?.p||0.5;
+    const penH=(ph+pa)>0?ph/(ph+pa):0.5;
+    return {pH:pHw+pD*penH, pA:pAw+pD*(1-penH), lh, la};
+  }
+  function top5KO(lh, la) {
+    const rho=DC.rho;
+    const dcTau=(h,a)=>{
+      if(h==0&&a==0) return 1-lh*la*rho;
+      if(h==1&&a==0) return 1+la*rho;
+      if(h==0&&a==1) return 1+lh*rho;
+      if(h==1&&a==1) return 1-rho;
+      return 1;
+    };
+    const sc=[];
+    for(let h=0;h<=8;h++) for(let a=0;a<=8;a++) sc.push({s:`${h}-${a}`,p:poisKO(h,lh)*poisKO(a,la)*dcTau(h,a)});
+    return sc.sort((a,b)=>b.p-a.p).slice(0,5);
+  }
+
+  // Resolve slots → equipo
+  const groupWinner={};
+  for (const g of 'ABCDEFGHIJKL'.split('')) {
+    if (typeof qualifiers!=='undefined' && qualifiers['W:'+g]) groupWinner[g]=qualifiers['W:'+g];
+    else { const top=[...teams.filter(t=>t.group===g)].sort((a,b)=>b.p_1st-a.p_1st)[0]; if(top) groupWinner[g]=top.team_es; }
+  }
+  const FIFA_THIRDS_KO={
+    'T:ABCDF':'D','T:CDFGH':'F','T:BEFIJ':'B','T:AEHIJ':'I',
+    'T:CEFHI':'E','T:EHIJK':'K','T:EFGIJ':'J','T:DEIJL':'L',
+  };
+  const thirdAssignKO={};
+  for (const [slot,g] of Object.entries(FIFA_THIRDS_KO)) {
+    const td=teams.find(x=>x.group===g&&x.p_3rd>0&&x.p_advance>0);
+    if(td) thirdAssignKO[slot]=td;
+  }
+  function resolveSlot(key) {
+    if (typeof qualifiers!=='undefined'&&qualifiers[key]) return {name:qualifiers[key],conf:true};
+    const [typ,grp]=key.split(':');
+    if (typ==='W') {
+      const t=[...teams.filter(x=>x.group===grp)].sort((a,b)=>b.p_1st-a.p_1st)[0];
+      return t?{name:t.team_es,conf:false,p:t.p_1st}:{name:'?',conf:false};
+    }
+    if (typ==='R') {
+      const exc=groupWinner[grp];
+      const t=[...teams.filter(x=>x.group===grp&&x.team_es!==exc)].sort((a,b)=>b.p_2nd-a.p_2nd)[0];
+      return t?{name:t.team_es,conf:false,p:t.p_2nd}:{name:'?',conf:false};
+    }
+    const td=thirdAssignKO[key];
+    return td?{name:td.team_es,conf:false,p:td.p_3rd}:{name:'?',conf:false};
+  }
+
+  const cards=[];
+  for (const [mIdStr,slots] of Object.entries(M_R32)) {
+    const mId=parseInt(mIdStr);
+    const sA=resolveSlot(slots[0]), sB=resolveSlot(slots[1]);
+    if(sA.name==='?'||sB.name==='?') continue;
+    const venue=VENUE_KO[mId]||'USA';
+    const {pH,pA,lh,la}=matchProbsKO(sA.name,sB.name,venue);
+    const certainty=Math.max(pH,pA);
+    const t5=top5KO(lh,la);
+    const maxP=Math.max(...t5.map(x=>x.p));
+    const favPct=(certainty*100).toFixed(1);
+    const scoresCells=t5.map(({s,p})=>{
+      const isTop=p===maxP;
+      return `<div class="score-cell ${isTop?'top':''}"><div class="score">${s}</div><div class="score-prob">${(p*100).toFixed(1)}%</div></div>`;
+    }).join('');
+    const confA=sA.conf?` <span style="color:var(--green);font-size:11px;">✓</span>`:`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);"> (${(sA.p*100).toFixed(0)}%)</span>`;
+    const confB=sB.conf?` <span style="color:var(--green);font-size:11px;">✓</span>`:`<span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);"> (${(sB.p*100).toFixed(0)}%)</span>`;
+    cards.push({
+      certainty,
+      html:`<div class="match-card">
+        <div>
+          <div class="match-date" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);">${favPct}%</div>
+          <div class="match-date" style="margin-top:4px;">R32</div>
+          <div class="match-date" style="margin-top:2px;">λ ${lh.toFixed(2)}–${la.toFixed(2)}</div>
+        </div>
+        <div>
+          <div class="match-teams">${sA.name}${confA}</div>
+          <div style="color:var(--muted);font-size:13px;font-family:'Fraunces',serif;margin:4px 0;">vs</div>
+          <div class="match-teams">${sB.name}${confB}</div>
+        </div>
+        <div>
+          <div class="match-scores">${scoresCells}</div>
+          <div style="margin-top:8px;">
+            <button onclick="toggleHeatmapKO(this,${lh.toFixed(4)},${la.toFixed(4)})" style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;background:none;border:1px solid var(--rule);padding:4px 8px;cursor:pointer;color:var(--muted);">Heatmap ▾</button>
+            <div class="heatmap-wrap" style="display:none;"></div>
+          </div>
+        </div>
+      </div>`
+    });
+  }
+  cards.sort((a,b)=>b.certainty-a.certainty);
+  document.getElementById('koMatchesContainer').innerHTML = cards.map(c=>c.html).join('');
 }
 
 renderLeaderboard();
