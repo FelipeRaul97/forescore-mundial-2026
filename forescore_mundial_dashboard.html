@@ -948,6 +948,27 @@ function renderKnockout() {
   }
 
   // ── H2H Dixon-Coles ──────────────────────────────────────────────────────
+  // Experiencia eliminatorias: (KO_played, KO_won) en Mundiales 1990-2022.
+  // Bayesiano residual con prior 5W-5L sobre 0.5; bias = logit(post).
+  // Pens cuenta como W/L. Fuente: registros FIFA / Wikipedia.
+  const KO_HIST = {
+    'Argentina':[20,13],'Brasil':[25,17],'Uruguay':[8,3],'Colombia':[4,1],'Ecuador':[1,0],'Paraguay':[4,1],
+    'España':[11,6],'Francia':[18,15],'Inglaterra':[16,7],'Alemania':[24,19],'Portugal':[8,3],
+    'Países Bajos':[18,10],'Croacia':[12,9],'Bélgica':[9,4],'Suiza':[5,0],'Suecia':[8,4],
+    'Noruega':[1,0],'Turquía':[4,3],'Bosnia y Herzegovina':[0,0],'Chequia':[0,0],'Austria':[0,0],'Escocia':[0,0],
+    'México':[7,0],'EEUU':[6,1],'Canadá':[0,0],'Panamá':[0,0],'Haití':[0,0],'Curazao':[0,0],
+    'Marruecos':[4,2],'Senegal':[3,1],'Egipto':[0,0],'Costa de Marfil':[0,0],'Argelia':[1,0],'Túnez':[0,0],
+    'Sudáfrica':[0,0],'Ghana':[3,1],'RD del Congo':[0,0],'Cabo Verde':[0,0],
+    'Japón':[4,0],'Corea del Sur':[6,2],'Irán':[0,0],'Arabia Saudí':[1,0],'Australia':[2,0],
+    'Catar':[0,0],'Uzbekistán':[0,0],'Irak':[0,0],'Jordania':[0,0],'Nueva Zelanda':[0,0],
+  };
+  const KO_GAMMA = 0.10, KO_PRI_N = 10, KO_PRI_W = 5;
+  function koBias(team) {
+    const h = KO_HIST[team] || [0,0];
+    const p = (h[1] + KO_PRI_W) / (h[0] + KO_PRI_N);
+    return Math.log(p / (1 - p));
+  }
+
   // Sede de cada partido knockout → pais. Solo se aplica host bonus si el
   // equipo juega EN su pais (fuente: FIFA / ESPN / Wikipedia).
   const VENUE = {
@@ -966,6 +987,8 @@ function renderKnockout() {
     let la = Math.exp(A.a - H.b) * DC.mu_a;
     if (H.host && COUNTRY[home] === venue) lh *= DC.host_adv;
     if (A.host && COUNTRY[away] === venue) la *= DC.host_adv;
+    lh *= Math.exp(KO_GAMMA * koBias(home));
+    la *= Math.exp(KO_GAMMA * koBias(away));
     const rho = DC.rho;
     let pHw=0, pD=0, pAw=0;
     for (let i=0;i<=10;i++) for (let j=0;j<=10;j++) {
