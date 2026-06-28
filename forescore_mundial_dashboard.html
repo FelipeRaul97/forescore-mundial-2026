@@ -948,15 +948,24 @@ function renderKnockout() {
   }
 
   // ── H2H Dixon-Coles ──────────────────────────────────────────────────────
+  // Sede de cada partido knockout → pais. Solo se aplica host bonus si el
+  // equipo juega EN su pais (fuente: FIFA / ESPN / Wikipedia).
+  const VENUE = {
+    73:'USA',74:'USA',75:'MEX',76:'USA',77:'USA',78:'USA',79:'MEX',80:'USA',
+    81:'USA',82:'USA',83:'CAN',84:'USA',85:'CAN',86:'USA',87:'USA',88:'USA',
+    89:'USA',90:'USA',91:'USA',92:'MEX',93:'USA',94:'USA',95:'USA',96:'CAN',
+    97:'USA',98:'USA',99:'USA',100:'USA',101:'USA',102:'USA',103:'USA',
+  };
+  const COUNTRY = {'México':'MEX','EEUU':'USA','Canadá':'CAN'};
   const FACT = [1]; for (let i=1;i<=12;i++) FACT[i] = FACT[i-1]*i;
   const pois = (k, lam) => Math.exp(-lam) * Math.pow(lam, k) / FACT[k];
-  function matchProbs(home, away) {
+  function matchProbs(home, away, venue) {
     const H = DC.teams[home], A = DC.teams[away];
     if (!H || !A) return {pH:0.5, pA:0.5};
     let lh = Math.exp(H.a - A.b) * DC.mu_h;
     let la = Math.exp(A.a - H.b) * DC.mu_a;
-    if (H.host) lh *= DC.host_adv;
-    if (A.host) la *= DC.host_adv;
+    if (H.host && COUNTRY[home] === venue) lh *= DC.host_adv;
+    if (A.host && COUNTRY[away] === venue) la *= DC.host_adv;
     const rho = DC.rho;
     let pHw=0, pD=0, pAw=0;
     for (let i=0;i<=10;i++) for (let j=0;j<=10;j++) {
@@ -983,7 +992,7 @@ function renderKnockout() {
     const [sa, sb] = M[mId];
     const tA = teamFromSlot(sa), tB = teamFromSlot(sb);
     if (!tA || !tB) { dist[mId] = {}; continue; }
-    const {pH, pA} = matchProbs(tA, tB);
+    const {pH, pA} = matchProbs(tA, tB, VENUE[mId]);
     dist[mId] = {[tA]: pH, [tB]: pA};
   }
   const FEEDERS = {
@@ -993,10 +1002,11 @@ function renderKnockout() {
   };
   const computeDist = mId => {
     const [fa, fb] = FEEDERS[mId];
+    const v = VENUE[mId];
     const d = {};
     for (const [tA, pA] of Object.entries(dist[fa])) {
       for (const [tB, pB] of Object.entries(dist[fb])) {
-        const {pH, pA: pAaway} = matchProbs(tA, tB);
+        const {pH, pA: pAaway} = matchProbs(tA, tB, v);
         d[tA] = (d[tA]||0) + pA * pB * pH;
         d[tB] = (d[tB]||0) + pA * pB * pAaway;
       }
@@ -1031,7 +1041,7 @@ function renderKnockout() {
     const slotPh = `<div class="bk2-slot ph"><span class="bk2-sn">—</span><span class="bk2-sp"></span></div>`;
     if (!topA || !topB) return pr(slotPh, slotPh);
     const [tA] = topA, [tB] = topB;
-    const {pH, pA} = matchProbs(tA, tB);
+    const {pH, pA} = matchProbs(tA, tB, VENUE[mId]);
     return pr(
       `<div class="bk2-slot"><span class="bk2-sn">${tA}</span><span class="bk2-sp">${(pH*100).toFixed(1)}%</span></div>`,
       `<div class="bk2-slot"><span class="bk2-sn">${tB}</span><span class="bk2-sp">${(pA*100).toFixed(1)}%</span></div>`
@@ -1059,7 +1069,7 @@ function renderKnockout() {
   const topFinB = Object.entries(dist[102]).sort((a,b)=>b[1]-a[1])[0];
   const tFinA = topFinA ? topFinA[0] : '—';
   const tFinB = topFinB ? topFinB[0] : '—';
-  const finProbs = (topFinA && topFinB) ? matchProbs(tFinA, tFinB) : {pH:0, pA:0};
+  const finProbs = (topFinA && topFinB) ? matchProbs(tFinA, tFinB, VENUE[103]) : {pH:0, pA:0};
 
   document.getElementById('knockoutBracket').innerHTML = `
     <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:6px;">
