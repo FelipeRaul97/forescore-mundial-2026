@@ -849,6 +849,7 @@ function showSection(name, btn) {
 
 // ---- Bracket eliminatorio (proyección por slots oficiales) ----
 const qualifiers = {"W:E": "Alemania", "R:E": "Costa de Marfil", "W:I": "Francia", "R:I": "Noruega", "W:J": "Argentina", "R:J": "Austria", "W:A": "México", "R:A": "Sudáfrica", "W:B": "Suiza", "R:B": "Canadá", "W:C": "Brasil", "R:C": "Marruecos", "W:D": "EEUU", "R:D": "Australia", "W:F": "Países Bajos", "R:F": "Japón", "W:G": "Bélgica", "R:G": "Egipto", "W:H": "España", "R:H": "Cabo Verde", "W:K": "Colombia", "R:K": "Portugal", "W:L": "Inglaterra", "R:L": "Croacia", "T:ABCDFGHIJKL": "Senegal"};
+const DC = {"rho": -0.27993, "mu_h": 1.26651, "mu_a": 1.06033, "host_adv": 1.25, "teams": {"Argelia": {"a": 0.02901, "b": -0.28195, "p": 0.5, "host": false}, "Argentina": {"a": 0.48799, "b": 0.51579, "p": 0.75, "host": false}, "Australia": {"a": -0.31895, "b": 0.15909, "p": 0.5, "host": false}, "Austria": {"a": 0.22116, "b": -0.18978, "p": 0.5, "host": false}, "Bélgica": {"a": 0.34695, "b": 0.15506, "p": 0.5, "host": false}, "Bosnia y Herzegovina": {"a": 0.07022, "b": -0.17141, "p": 0.5, "host": false}, "Brasil": {"a": 0.4774, "b": 0.37268, "p": 0.5, "host": false}, "Canadá": {"a": 0.17739, "b": 0.11652, "p": 0.5, "host": true}, "Cabo Verde": {"a": -0.34643, "b": -0.09043, "p": 0.5, "host": false}, "Colombia": {"a": 0.21945, "b": 0.35186, "p": 0.5, "host": false}, "Croacia": {"a": 0.30925, "b": 0.00662, "p": 0.75, "host": false}, "Curazao": {"a": -0.55375, "b": -0.44447, "p": 0.5, "host": false}, "Chequia": {"a": -0.031, "b": -0.1985, "p": 0.5, "host": false}, "RD del Congo": {"a": -0.24919, "b": 0.00425, "p": 0.5, "host": false}, "Ecuador": {"a": 0.0213, "b": 0.51626, "p": 0.5, "host": false}, "Egipto": {"a": -0.01648, "b": 0.03647, "p": 0.5, "host": false}, "Inglaterra": {"a": 0.41247, "b": 0.34971, "p": 0.36, "host": false}, "Francia": {"a": 0.54945, "b": 0.20857, "p": 0.5, "host": false}, "Alemania": {"a": 0.58963, "b": -0.10314, "p": 0.79, "host": false}, "Ghana": {"a": -0.28515, "b": -0.03476, "p": 0.5, "host": false}, "Haití": {"a": -0.44399, "b": -0.52339, "p": 0.5, "host": false}, "Irán": {"a": -0.09961, "b": -0.01885, "p": 0.5, "host": false}, "Irak": {"a": -0.63185, "b": -0.55226, "p": 0.5, "host": false}, "Costa de Marfil": {"a": -0.0562, "b": 0.17448, "p": 0.5, "host": false}, "Japón": {"a": 0.09223, "b": 0.07855, "p": 0.33, "host": false}, "Jordania": {"a": -0.17792, "b": -0.5353, "p": 0.5, "host": false}, "México": {"a": 0.20146, "b": 0.44187, "p": 0.33, "host": true}, "Marruecos": {"a": 0.16482, "b": 0.30274, "p": 0.57, "host": false}, "Países Bajos": {"a": 0.5197, "b": -0.05085, "p": 0.5, "host": false}, "Nueva Zelanda": {"a": -0.14906, "b": -0.57682, "p": 0.5, "host": false}, "Noruega": {"a": 0.44949, "b": -0.22971, "p": 0.5, "host": false}, "Panamá": {"a": -0.45077, "b": -0.23847, "p": 0.5, "host": false}, "Paraguay": {"a": -0.14024, "b": 0.36303, "p": 0.5, "host": false}, "Portugal": {"a": 0.3252, "b": 0.21997, "p": 0.67, "host": false}, "Catar": {"a": -0.41693, "b": -0.53102, "p": 0.5, "host": false}, "Arabia Saudí": {"a": -0.56859, "b": -0.18201, "p": 0.5, "host": false}, "Escocia": {"a": -0.15296, "b": -0.05318, "p": 0.5, "host": false}, "Senegal": {"a": 0.23136, "b": -0.03125, "p": 0.5, "host": false}, "Sudáfrica": {"a": -0.22776, "b": 0.02751, "p": 0.5, "host": false}, "Corea del Sur": {"a": -0.31233, "b": -0.09447, "p": 0.5, "host": false}, "España": {"a": 0.5273, "b": 0.44319, "p": 0.36, "host": false}, "Suecia": {"a": 0.19905, "b": -0.18793, "p": 0.5, "host": false}, "Suiza": {"a": 0.52246, "b": 0.1771, "p": 0.5, "host": false}, "Túnez": {"a": -0.33582, "b": -0.32115, "p": 0.5, "host": false}, "Turquía": {"a": 0.11525, "b": -0.10319, "p": 0.5, "host": false}, "EEUU": {"a": 0.17668, "b": -0.23214, "p": 0.5, "host": true}, "Uruguay": {"a": 0.03807, "b": 0.24789, "p": 0.5, "host": false}, "Uzbekistán": {"a": -0.35232, "b": -0.45023, "p": 0.5, "host": false}}};
 const KO_R32 = {
   73:["R:A","R:B"], 74:["W:E","T:ABCDF"], 75:["W:F","R:C"], 76:["W:C","R:F"],
   77:["W:I","T:CDFGH"], 78:["R:E","R:I"], 79:["W:A","T:CEFHI"], 80:["W:L","T:EHIJK"],
@@ -946,132 +947,119 @@ function renderKnockout() {
     }
   }
 
-  // best(): elige el equipo con mayor pKey de entre los slots dados, usando ST
-  function best(slotKeys, pKey) {
-    let top = null, topP = -1;
-    for (const k of slotKeys) {
-      const d = ST[k]; if (!d || d.name==='?') continue;
-      const nm = d.name.replace(/\s*\(3º\)$/, '');
-      const td = teams.find(x => x.team_es === nm);
-      if (!td) continue;
-      const p = td[pKey] || 0;
-      if (p > topP) { topP = p; top = {name: nm, p, confirmed: d.confirmed||false}; }
+  // ── H2H Dixon-Coles ──────────────────────────────────────────────────────
+  const FACT = [1]; for (let i=1;i<=12;i++) FACT[i] = FACT[i-1]*i;
+  const pois = (k, lam) => Math.exp(-lam) * Math.pow(lam, k) / FACT[k];
+  function matchProbs(home, away) {
+    const H = DC.teams[home], A = DC.teams[away];
+    if (!H || !A) return {pH:0.5, pA:0.5};
+    let lh = Math.exp(H.a - A.b) * DC.mu_h;
+    let la = Math.exp(A.a - H.b) * DC.mu_a;
+    if (H.host) lh *= DC.host_adv;
+    if (A.host) la *= DC.host_adv;
+    const rho = DC.rho;
+    let pHw=0, pD=0, pAw=0;
+    for (let i=0;i<=10;i++) for (let j=0;j<=10;j++) {
+      let t = 1;
+      if (i===0 && j===0) t = 1 - lh*la*rho;
+      else if (i===1 && j===0) t = 1 + la*rho;
+      else if (i===0 && j===1) t = 1 + lh*rho;
+      else if (i===1 && j===1) t = 1 - rho;
+      const p = pois(i,lh) * pois(j,la) * t;
+      if (i>j) pHw += p; else if (i===j) pD += p; else pAw += p;
     }
-    return top || {name:'—', p:0, confirmed:false};
+    const ph = H.p, pa = A.p;
+    const penH = (ph+pa) > 0 ? ph/(ph+pa) : 0.5;
+    return {pH: pHw + pD*penH, pA: pAw + pD*(1-penH)};
   }
 
-  function sKey(key) {
-    if (typeof qualifiers !== 'undefined' && qualifiers[key])
-      return `<div class="bk2-slot ok"><span class="bk2-sn">${qualifiers[key]}</span><span class="bk2-sp">✓</span></div>`;
-    const d = ST[key];
-    if (!d || d.name==='?') {
-      const lbl = key.startsWith('W:') ? '1º '+key.slice(2) : key.startsWith('R:') ? '2º '+key.slice(2) : '3º';
-      return `<div class="bk2-slot ph"><span class="bk2-sn">${lbl}</span><span class="bk2-sp"></span></div>`;
+  // ── Tree walk: dist[matchId] = {team: P(team gana ese partido)} ─────────
+  const teamFromSlot = k => {
+    const d = ST[k];
+    return d && d.name && d.name !== '?' ? d.name.replace(/\s*\(3º\)$/, '') : null;
+  };
+  const dist = {};
+  for (const mId of Object.keys(M)) {
+    const [sa, sb] = M[mId];
+    const tA = teamFromSlot(sa), tB = teamFromSlot(sb);
+    if (!tA || !tB) { dist[mId] = {}; continue; }
+    const {pH, pA} = matchProbs(tA, tB);
+    dist[mId] = {[tA]: pH, [tB]: pA};
+  }
+  const FEEDERS = {
+    89:[74,77], 90:[73,75], 91:[76,78], 92:[79,80], 93:[83,84], 94:[81,82], 95:[86,88], 96:[85,87],
+    97:[89,90], 98:[93,94], 99:[91,92], 100:[95,96],
+    101:[97,98], 102:[99,100],
+  };
+  const computeDist = mId => {
+    const [fa, fb] = FEEDERS[mId];
+    const d = {};
+    for (const [tA, pA] of Object.entries(dist[fa])) {
+      for (const [tB, pB] of Object.entries(dist[fb])) {
+        const {pH, pA: pAaway} = matchProbs(tA, tB);
+        d[tA] = (d[tA]||0) + pA * pB * pH;
+        d[tB] = (d[tB]||0) + pA * pB * pAaway;
+      }
     }
-    return `<div class="bk2-slot"><span class="bk2-sn">${d.name}</span><span class="bk2-sp">${(d.p_r16*100).toFixed(1)}%</span></div>`;
-  }
-
-  // Render a single projected slot given a pre-resolved team object {name, p, confirmed}
-  function slotHtml(t, normP) {
-    const ok = t.confirmed;
-    const ph = t.name === '—';
-    const dp = normP > 0 ? t.p / normP : t.p;
-    const ps = ok ? '✓' : (dp > 0.001 ? (dp*100).toFixed(1)+'%' : '');
-    return `<div class="bk2-slot ${ok?'ok':''} ${ph?'ph':''}"><span class="bk2-sn">${t.name}</span><span class="bk2-sp">${ps}</span></div>`;
-  }
-
-  // Render a pair of R16+ slots — percentages normalized so the two teams sum to 100%
-  function prNorm(keysA, keysB, pKey) {
-    const tA = best(keysA, pKey);
-    const tB = best(keysB, pKey);
-    const total = tA.p + tB.p;
-    return pr(slotHtml(tA, total), slotHtml(tB, total));
-  }
+    dist[mId] = d;
+  };
+  [89,90,91,92,93,94,95,96, 97,98,99,100, 101,102].forEach(computeDist);
 
   function pr(a, b) { return `<div class="bk2-pair">${a}${b}</div>`; }
   function col(cls, pairs) { return `<div class="bk2-col ${cls}">${pairs.join('')}</div>`; }
 
-  // ── Slot key groups per bracket position ────────────────────────────────
-  // R16 feeder sides (each arm = one R32 match's slots)
-  const r89a=M[74], r89b=M[77];   const r90a=M[73], r90b=M[75];
-  const r93a=M[83], r93b=M[84];   const r94a=M[81], r94b=M[82];
-  const r91a=M[76], r91b=M[78];   const r92a=M[79], r92b=M[80];
-  const r95a=M[86], r95b=M[88];   const r96a=M[85], r96b=M[87];
+  // Renderiza un slot de un cruce R32 → muestra H2H % de pasar a R16 contra rival
+  function slotR32(mId, side) {
+    const [sa, sb] = M[mId];
+    const slot = side === 0 ? sa : sb;
+    const t = teamFromSlot(slot);
+    const isThird = ST[slot] && ST[slot].name && ST[slot].name.endsWith('(3º)');
+    if (!t) {
+      const lbl = slot.startsWith('W:') ? '1º '+slot.slice(2) : slot.startsWith('R:') ? '2º '+slot.slice(2) : '3º';
+      return `<div class="bk2-slot ph"><span class="bk2-sn">${lbl}</span><span class="bk2-sp"></span></div>`;
+    }
+    const p = dist[mId][t] || 0;
+    const nm = isThird ? t + '  (3º)' : t;
+    return `<div class="bk2-slot"><span class="bk2-sn">${nm}</span><span class="bk2-sp">${(p*100).toFixed(1)}%</span></div>`;
+  }
 
-  // QF feeder sides (each arm = one R16 match's full pool)
-  const q97a=cat(r89a,r89b), q97b=cat(r90a,r90b);
-  const q98a=cat(r93a,r93b), q98b=cat(r94a,r94b);
-  const q99a=cat(r91a,r91b), q99b=cat(r92a,r92b);
-  const q100a=cat(r95a,r95b), q100b=cat(r96a,r96b);
+  // Renderiza el cruce R16+ usando los favoritos de cada feeder y su H2H exacto
+  function pairFromMatch(mId) {
+    const [fa, fb] = FEEDERS[mId];
+    const topA = Object.entries(dist[fa]).sort((a,b)=>b[1]-a[1])[0];
+    const topB = Object.entries(dist[fb]).sort((a,b)=>b[1]-a[1])[0];
+    const slotPh = `<div class="bk2-slot ph"><span class="bk2-sn">—</span><span class="bk2-sp"></span></div>`;
+    if (!topA || !topB) return pr(slotPh, slotPh);
+    const [tA] = topA, [tB] = topB;
+    const {pH, pA} = matchProbs(tA, tB);
+    return pr(
+      `<div class="bk2-slot"><span class="bk2-sn">${tA}</span><span class="bk2-sp">${(pH*100).toFixed(1)}%</span></div>`,
+      `<div class="bk2-slot"><span class="bk2-sn">${tB}</span><span class="bk2-sp">${(pA*100).toFixed(1)}%</span></div>`
+    );
+  }
 
-  // SF feeder sides (each arm = one QF match's full pool)
-  const s101a=cat(q97a,q97b), s101b=cat(q98a,q98b);
-  const s102a=cat(q99a,q99b), s102b=cat(q100a,q100b);
-
-  // Final
-  const fa=cat(s101a,s101b), fb=cat(s102a,s102b);
+  const r32Pair = mId => pr(slotR32(mId, 0), slotR32(mId, 1));
 
   // ── Build columns ────────────────────────────────────────────────────────
-  const LR32 = col('bk2-r32', [
-    pr(sKey('W:E'),    sKey('T:ABCDF')), // M74
-    pr(sKey('W:I'),    sKey('T:CDFGH')), // M77
-    pr(sKey('R:A'),    sKey('R:B')),     // M73
-    pr(sKey('W:F'),    sKey('R:C')),     // M75
-    pr(sKey('R:K'),    sKey('R:L')),     // M83
-    pr(sKey('W:H'),    sKey('R:J')),     // M84
-    pr(sKey('W:D'),    sKey('T:BEFIJ')), // M81
-    pr(sKey('W:G'),    sKey('T:AEHIJ')), // M82
-  ]);
-
-  const LR16 = col('bk2-r16', [
-    prNorm(r89a, r89b, 'p_qf'), // R16-89
-    prNorm(r90a, r90b, 'p_qf'), // R16-90
-    prNorm(r93a, r93b, 'p_qf'), // R16-93
-    prNorm(r94a, r94b, 'p_qf'), // R16-94
-  ]);
-
-  const LQF = col('bk2-qf', [
-    prNorm(q97a, q97b, 'p_sf'), // QF-97
-    prNorm(q98a, q98b, 'p_sf'), // QF-98
-  ]);
-
-  const LSF = col('bk2-sf', [
-    prNorm(s101a, s101b, 'p_final'), // SF-101
-  ]);
-
-  const RSF = col('bk2-sf bk2-r', [
-    prNorm(s102a, s102b, 'p_final'), // SF-102
-  ]);
-
-  const RQF = col('bk2-qf bk2-r', [
-    prNorm(q99a,  q99b,  'p_sf'), // QF-99
-    prNorm(q100a, q100b, 'p_sf'), // QF-100
-  ]);
-
-  const RR16 = col('bk2-r16 bk2-r', [
-    prNorm(r91a, r91b, 'p_qf'), // R16-91
-    prNorm(r92a, r92b, 'p_qf'), // R16-92
-    prNorm(r95a, r95b, 'p_qf'), // R16-95
-    prNorm(r96a, r96b, 'p_qf'), // R16-96
-  ]);
-
-  const RR32 = col('bk2-r32 bk2-r', [
-    pr(sKey('W:C'),    sKey('R:F')),     // M76
-    pr(sKey('R:E'),    sKey('R:I')),     // M78
-    pr(sKey('W:A'),    sKey('T:CEFHI')),// M79
-    pr(sKey('W:L'),    sKey('T:EHIJK')),// M80
-    pr(sKey('W:J'),    sKey('R:H')),     // M86
-    pr(sKey('R:D'),    sKey('R:G')),     // M88
-    pr(sKey('W:B'),    sKey('T:EFGIJ')),// M85
-    pr(sKey('W:K'),    sKey('T:DEIJL')),// M87
-  ]);
+  const LR32 = col('bk2-r32', [74,77,73,75,83,84,81,82].map(r32Pair));
+  const LR16 = col('bk2-r16', [89,90,93,94].map(pairFromMatch));
+  const LQF  = col('bk2-qf',  [97,98].map(pairFromMatch));
+  const LSF  = col('bk2-sf',  [101].map(pairFromMatch));
+  const RSF  = col('bk2-sf bk2-r', [102].map(pairFromMatch));
+  const RQF  = col('bk2-qf bk2-r', [99,100].map(pairFromMatch));
+  const RR16 = col('bk2-r16 bk2-r', [91,92,95,96].map(pairFromMatch));
+  const RR32 = col('bk2-r32 bk2-r', [76,78,79,80,86,88,85,87].map(r32Pair));
 
   const G = `<div style="width:14px;flex-shrink:0;"></div>`;
   const H = (t,c) => `<div style="width:160px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:${c||'var(--muted)'};">${t}</div>`;
   const GH = `<div style="width:14px;"></div>`;
 
-  const finA = best(fa,'p_champ'), finB = best(fb,'p_champ');
-  const finTotal = finA.p + finB.p;
+  // Finalistas + H2H exacto en la final
+  const topFinA = Object.entries(dist[101]).sort((a,b)=>b[1]-a[1])[0];
+  const topFinB = Object.entries(dist[102]).sort((a,b)=>b[1]-a[1])[0];
+  const tFinA = topFinA ? topFinA[0] : '—';
+  const tFinB = topFinB ? topFinB[0] : '—';
+  const finProbs = (topFinA && topFinB) ? matchProbs(tFinA, tFinB) : {pH:0, pA:0};
 
   document.getElementById('knockoutBracket').innerHTML = `
     <div style="display:flex;align-items:flex-end;gap:0;margin-bottom:6px;">
@@ -1084,8 +1072,8 @@ function renderKnockout() {
       <div class="bk2-fin-wrap">
         <div class="bk2-fin">
           <div class="bk2-fin-lbl">Final</div>
-          <div class="bk2-fin-slot">${finA.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finA.p/finTotal*100).toFixed(1)+'%':''}</span></div>
-          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${finB.name}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${finTotal>0?(finB.p/finTotal*100).toFixed(1)+'%':''}</span></div>
+          <div class="bk2-fin-slot">${tFinA}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${(finProbs.pH*100).toFixed(1)}%</span></div>
+          <div class="bk2-fin-slot" style="border-top:1px solid rgba(255,255,255,0.15)">${tFinB}<br><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)">${(finProbs.pA*100).toFixed(1)}%</span></div>
         </div>
       </div>
       ${RSF}${G}${RQF}${G}${RR16}${G}${RR32}
