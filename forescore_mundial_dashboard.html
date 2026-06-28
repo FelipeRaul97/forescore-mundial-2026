@@ -914,25 +914,17 @@ function renderKnockout() {
     'W:C','R:F','R:E','R:I','W:A','T:CEFHI','W:L','T:EHIJK',
     'W:J','R:H','R:D','R:G','W:B','T:EFGIJ','W:K','T:DEIJL'
   ];
-  // Matching perfecto terceros→slots T: (backtracking). Greedy fallaba cuando un tercero
-  // tenía un único slot compatible y otro tercero se lo "comía" antes.
-  const tSlots = R32_ORDER.filter(k => k.startsWith('T:') && !(typeof qualifiers !== 'undefined' && qualifiers[k]));
-  const qualifiedThirds = teams.filter(x => x.p_3rd > 0 && x.p_advance > 0).map(x => x.team_es);
+  // Asignación oficial FIFA de los 8 mejores terceros a sus slots T: (grupos
+  // clasificantes B,D,E,F,I,J,K,L). Tabla FIFA 2026, fuente ESPN/CBS/Goal.
+  const FIFA_THIRDS = {
+    'T:ABCDF': 'D', 'T:CDFGH': 'F', 'T:BEFIJ': 'B', 'T:AEHIJ': 'I',
+    'T:CEFHI': 'E', 'T:EHIJK': 'K', 'T:EFGIJ': 'J', 'T:DEIJL': 'L',
+  };
   const thirdAssign = {};
-  (function match(i, used) {
-    if (i === tSlots.length) return true;
-    const grp = tSlots[i].split(':')[1];
-    for (const name of qualifiedThirds) {
-      if (used.has(name)) continue;
-      const td = teams.find(x => x.team_es === name);
-      if (!td || !grp.includes(td.group)) continue;
-      thirdAssign[tSlots[i]] = td;
-      used.add(name);
-      if (match(i+1, used)) return true;
-      used.delete(name);
-    }
-    return false;
-  })(0, new Set());
+  for (const [slot, g] of Object.entries(FIFA_THIRDS)) {
+    const td = teams.find(x => x.group === g && x.p_3rd > 0 && x.p_advance > 0);
+    if (td) thirdAssign[slot] = td;
+  }
 
   const ST = {}; // slot -> {name, p_r16, confirmed}
   for (const key of R32_ORDER) {
