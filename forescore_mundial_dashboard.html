@@ -1207,9 +1207,10 @@ function renderKOMatches() {
   function computeLambdas(home, away, venue) {
     const H = DC.teams[home], A = DC.teams[away];
     if (!H||!A) return {lh:1,la:1};
-    // KO: cancha neutral — sin mu_h/mu_a, solo host_adv para anfitriones en su pais
-    let lh = Math.exp(H.a - A.b);
-    let la = Math.exp(A.a - H.b);
+    // KO: cancha neutral — mu simetrico (media geometrica) para nivel de goles realista
+    const mu_n = Math.sqrt(DC.mu_h * DC.mu_a);
+    let lh = Math.exp(H.a - A.b) * mu_n;
+    let la = Math.exp(A.a - H.b) * mu_n;
     if (H.host && COUNTRY_KO[home]===venue) lh *= DC.host_adv;
     if (A.host && COUNTRY_KO[away]===venue) la *= DC.host_adv;
     lh *= Math.exp(KO_GAMMA * koBiasKO(home));
