@@ -97,7 +97,8 @@ def simulate(n_sims=50000, k_disp=8.0, shrink=0.30, seed=42):
     gfix = [(i,j) for i in range(4) for j in range(i+1,4)]
 
     def play(h, a):
-        lh = np.exp(alpha[h]-beta[a]) * mu_h; la = np.exp(alpha[a]-beta[h]) * mu_a
+        # KO: cancha neutral — sin mu_h/mu_a, solo HOST_ADV para anfitriones en su pais
+        lh = np.exp(alpha[h]-beta[a]); la = np.exp(alpha[a]-beta[h])
         if h in HOSTS_2026: lh *= HOST_ADV
         if a in HOSTS_2026: la *= HOST_ADV
         if k_disp and k_disp < 1e6:

@@ -121,11 +121,13 @@ if dc_match:
     dc_data = json.loads(dc_match.group(1))
     for team_es, params in dc_data["teams"].items():
         team_en = en_by_es.get(team_es, team_es)
-        adj_a = alpha_adj.get(team_en, 0)
-        adj_b = beta_adj.get(team_en, 0)
-        if adj_a or adj_b:
-            params["a"] = round(params["a"] + adj_a, 5)
-            params["b"] = round(params["b"] + adj_b, 5)
+        # Siempre recalcular desde CSV base para evitar doble ajuste en sucesivas ejecuciones
+        base_a = alpha.get(team_en, None)
+        base_b = beta.get(team_en, None)
+        if base_a is not None:
+            params["a"] = round(base_a + alpha_adj.get(team_en, 0), 5)
+        if base_b is not None:
+            params["b"] = round(base_b + beta_adj.get(team_en, 0), 5)
     dc_data["rho"]  = round(RHO, 5)
     dc_data["mu_h"] = round(MU_H, 5)
     dc_data["mu_a"] = round(MU_A, 5)
