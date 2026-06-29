@@ -140,11 +140,10 @@ if dc_match:
 # Banner si hay actividad
 n_played = len(history)
 n_adj = sum(1 for v in alpha_adj.values() if abs(v) > 0.005)
+# Eliminar banners previos antes de insertar uno nuevo
+html_out = re.sub(r'<div[^>]*>\s*LIVE\s·.*?</div>', '', html_out, flags=re.DOTALL)
 if n_played or n_adj:
-    banner = f"""
-<div style="background:#4a6b3e;color:#f5f1e8;padding:10px 32px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;text-align:center;">
-LIVE · {n_played} partidos procesados · {n_adj} equipos ajustados
-</div>"""
+    banner = f'<div style="background:#4a6b3e;color:#f5f1e8;padding:10px 32px;font-family:\'JetBrains Mono\',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.18em;text-align:center;">LIVE · {n_played} partidos procesados · {n_adj} equipos ajustados</div>'
     html_out = html_out.replace("<body>", "<body>" + banner, 1)
 
 OUT.write_text(html_out, encoding="utf-8")
